@@ -1,12 +1,11 @@
 import { StatusBar, StyleSheet, Text, View } from "react-native";
 import React from "react";
+import Home from "../screens/Home";
 
 const index = () => {
   return (
     <>
-      <View>
-        <Text>index</Text>
-      </View>
+      <Home />
       <StatusBar barStyle={"dark-content"} />
     </>
   );

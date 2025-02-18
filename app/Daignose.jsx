@@ -1,12 +1,9 @@
 import { StyleSheet, Text, View } from "react-native";
 import React from "react";
+import DaignoseScreen from "../screens/DaignoseScreen";
 
 const Daignose = () => {
-  return (
-    <View>
-      <Text>Daignose</Text>
-    </View>
-  );
+  return <DaignoseScreen />;
 };
 
 export default Daignose;
