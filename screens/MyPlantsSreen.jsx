@@ -1,7 +1,7 @@
 import { Image, StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import React from "react";
 
-const ReminderScreen = () => {
+const MyPlantsScreen = () => {
   return (
     <View style={styles.container}>
       <Image source={require("../assets/images/add-plant.png")} />
@@ -22,7 +22,7 @@ const ReminderScreen = () => {
   );
 };
 
-export default ReminderScreen;
+export default MyPlantsScreen;
 
 const styles = StyleSheet.create({
   container: {

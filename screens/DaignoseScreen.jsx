@@ -4,7 +4,7 @@ import SearchBar from "../components/SearchBar";
 import PlantCard from "../components/PlantCard";
 import { PLANTS } from "../data/dummy";
 
-const Daignose = () => {
+const DiagnoseScreen = () => {
   // Render the header section
   const renderHeader = () => (
     <View>
@@ -45,7 +45,7 @@ const Daignose = () => {
   );
 };
 
-export default Daignose;
+export default DiagnoseScreen;
 
 const styles = StyleSheet.create({
   container: {

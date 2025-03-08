@@ -4,7 +4,7 @@ import SearchBar from "../components/SearchBar";
 import PlantCard from "../components/PlantCard";
 import { PLANTS } from "../data/dummy";
 
-const Home = () => {
+const HomeScreen = () => {
   // Render the header section
   const renderHeader = () => (
     <View>
@@ -45,7 +45,7 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default HomeScreen;
 
 const styles = StyleSheet.create({
   container: {
