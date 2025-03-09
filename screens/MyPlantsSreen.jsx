@@ -1,10 +1,17 @@
-import { Image, StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import React from "react";
+import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import LottieView from "lottie-react-native";
 
 const MyPlantsScreen = () => {
   return (
     <View style={styles.container}>
-      <Image source={require("../assets/images/add-plant.png")} />
+      {/* Replace the Image component with LottieView */}
+      <LottieView
+        source={require("../assets/plant.json")} // Path to your Lottie JSON file
+        autoPlay
+        loop
+        style={styles.animation}
+      />
       <Text style={styles.title}>Let's get started</Text>
       <Text style={styles.subtitle}>
         Get professional plant care guidance to keep your plant alive!
@@ -30,6 +37,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#FFFFFF",
+  },
+  animation: {
+    width: 300, // Adjust the width and height as needed
+    height: 300,
   },
   title: {
     fontSize: 32,
