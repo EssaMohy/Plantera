@@ -8,13 +8,13 @@ import {
   Pressable,
 } from "react-native";
 
-const PlantCard = ({ image, title, subtitle }) => {
+const PlantCard = ({ commonName, scientificName }) => {
   return (
     <View style={styles.card}>
       <Pressable android_ripple={{ color: "#ccc" }}>
         <View style={styles.imageContainer}>
           <Image
-            source={{ uri: image }}
+            // source={{ uri: image }}
             style={styles.image}
             resizeMode="cover"
             onError={(e) =>
@@ -24,10 +24,10 @@ const PlantCard = ({ image, title, subtitle }) => {
         </View>
         <View style={styles.textContainer}>
           <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
-            {title}
+            {commonName}
           </Text>
           <Text style={styles.subtitle} numberOfLines={2} ellipsizeMode="tail">
-            {subtitle}
+            {scientificName}
           </Text>
         </View>
       </Pressable>

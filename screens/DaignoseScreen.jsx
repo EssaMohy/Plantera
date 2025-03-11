@@ -2,7 +2,6 @@ import { FlatList, StyleSheet, Text, View } from "react-native";
 import React from "react";
 import SearchBar from "../components/SearchBar";
 import PlantCard from "../components/PlantCard";
-import { PLANTS } from "../data/dummy";
 
 const DiagnoseScreen = () => {
   // Render the header section
@@ -23,25 +22,11 @@ const DiagnoseScreen = () => {
     </View>
   );
 
-  // Render each plant item
-  const renderPlant = (itemData) => (
-    <PlantCard
-      image={itemData.item.image}
-      title={itemData.item.title}
-      subtitle={itemData.item.subtitle}
-    />
-  );
-
   return (
-    <FlatList
-      data={PLANTS} // Use the PLANTS data for the list
-      keyExtractor={(item) => item.id}
-      renderItem={renderPlant}
-      numColumns={2}
-      ListHeaderComponent={renderHeader} // Add the header at the top
-      ListFooterComponent={renderCategories} // Add the categories at the bottom
-      contentContainerStyle={styles.container}
-    />
+    <View style={styles.container}>
+      {renderHeader()}
+      {renderCategories()}
+    </View>
   );
 };
 
