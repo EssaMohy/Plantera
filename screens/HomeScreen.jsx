@@ -27,15 +27,9 @@ const HomeScreen = () => {
 
   // Render the categories section
   const renderCategories = () => (
-    <View>
+    <View style={styles.header}>
       <Text style={styles.title}>Categories</Text>
-      <FlatList
-        data={plants}
-        keyExtractor={(item) => item._id}
-        renderItem={renderPlant}
-        numColumns={2}
-        contentContainerStyle={styles.container}
-      />
+      {/* Add your categories here */}
     </View>
   );
 
@@ -44,6 +38,9 @@ const HomeScreen = () => {
     <PlantCard
       commonName={itemData.item.commonName}
       scientificName={itemData.item.scientificName}
+      onPress={() =>
+        navigation.navigate("Single Plant", { plant: itemData.item })
+      }
     />
   );
 

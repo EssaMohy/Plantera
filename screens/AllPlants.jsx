@@ -11,7 +11,7 @@ import PlantCard from "../components/PlantCard";
 import SearchBar from "../components/SearchBar";
 import { usePlants } from "../hooks/plants";
 
-const AllPlants = () => {
+const AllPlants = ({ navigation }) => {
   const { data: plants, isLoading, isError, error } = usePlants();
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -45,6 +45,9 @@ const AllPlants = () => {
     <PlantCard
       commonName={itemData.item.commonName}
       scientificName={itemData.item.scientificName}
+      onPress={() =>
+        navigation.navigate("Single Plant", { plant: itemData.item })
+      }
     />
   );
 

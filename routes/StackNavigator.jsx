@@ -4,6 +4,7 @@ import TabNavigator from "./TabNavigator";
 import SplashScreen from "../screens/SplashScreen";
 import HomeScreen from "../screens/HomeScreen";
 import AllPlants from "../screens/AllPlants";
+import SinglePlantScreen from "../screens/SinglePlantSreen";
 const Stack = createStackNavigator();
 
 const StackNavigator = () => {
@@ -21,6 +22,11 @@ const StackNavigator = () => {
           options={{ headerShown: false }}
         />
         <Stack.Screen name="All Plants" component={AllPlants} />
+        <Stack.Screen
+          name="Single Plant"
+          component={SinglePlantScreen}
+          options={{ headerShown: false }}
+        />
       </>
     </Stack.Navigator>
   );

@@ -8,10 +8,10 @@ import {
   Pressable,
 } from "react-native";
 
-const PlantCard = ({ commonName, scientificName }) => {
+const PlantCard = ({ commonName, scientificName, onPress }) => {
   return (
     <View style={styles.card}>
-      <Pressable android_ripple={{ color: "#ccc" }}>
+      <Pressable android_ripple={{ color: "#ccc" }} onPress={onPress}>
         <View style={styles.imageContainer}>
           <Image
             // source={{ uri: image }}
