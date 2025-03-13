@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: "http://10.0.2.2:5000/plantarea/api",
+  baseURL: "https://labour-jewell-plant-area-6cb70f30.koyeb.app/plantarea/api",
 });
 
 export default axiosInstance;
