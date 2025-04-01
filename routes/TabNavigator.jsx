@@ -93,11 +93,11 @@ const TabNavigator = ({ navigation }) => {
           }}
         />
         <Tab.Screen
-          name="Settings"
+          name="Light"
           component={SettingsScreen}
           options={{
             tabBarIcon: ({ color, size }) => (
-              <Ionicons name="settings" size={size} color={color} />
+              <Ionicons name="bulb" size={size} color={color} />
             ),
           }}
         />

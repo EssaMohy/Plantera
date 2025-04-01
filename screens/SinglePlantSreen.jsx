@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  Platform,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
@@ -23,7 +24,6 @@ const SinglePlantScreen = () => {
     <View style={styles.container}>
       {/* Plant Image */}
       <Image source={{ uri: plant.image }} style={styles.plantImage} />
-
       {/* Back Button */}
       <TouchableOpacity
         onPress={() => navigation.goBack()}
@@ -31,7 +31,6 @@ const SinglePlantScreen = () => {
       >
         <Icon name="arrow-back" size={24} color="#000" />
       </TouchableOpacity>
-
       {/* Plant Details */}
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.infoCard}>
@@ -40,15 +39,15 @@ const SinglePlantScreen = () => {
 
           <View style={styles.divider} />
 
-          <Text style={styles.sectionTitle}>Scientific Details</Text>
+          <Text style={styles.sectionTitle}>Scientific Classification</Text>
           <Text style={styles.detailText}>
-            <Text style={styles.boldText}>Family:</Text> {plant.family}
+            <Text style={styles.boldText}>Family:</Text> {plant.Family}
           </Text>
           <Text style={styles.detailText}>
-            <Text style={styles.boldText}>Order:</Text> {plant.order}
+            <Text style={styles.boldText}>Order:</Text> {plant.Order}
           </Text>
           <Text style={styles.detailText}>
-            <Text style={styles.boldText}>Kingdom:</Text> {plant.kingdom}
+            <Text style={styles.boldText}>Kingdom:</Text> {plant.Kingdom}
           </Text>
 
           <View style={styles.divider} />
@@ -86,6 +85,11 @@ const SinglePlantScreen = () => {
           />
         </View>
       </ScrollView>
+      <View style={{ height: 100 }} />
+      <TouchableOpacity activeOpacity={0.7} style={styles.addButton}>
+        <Icon name="add" size={22} color="white" style={styles.addButtonIcon} />
+        <Text style={styles.addButtonText}>Add to My Plants</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -93,13 +97,11 @@ const SinglePlantScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#FFFFFF",
   },
   plantImage: {
     width: width,
     height: 250,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
   },
   backButton: {
     position: "absolute",
@@ -153,6 +155,38 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "#ddd",
     marginVertical: 12,
+  },
+  addButton: {
+    position: "absolute",
+    bottom: 20,
+    left: 20,
+    right: 20,
+    backgroundColor: "#4CAF50", // Green color
+    borderRadius: 10,
+    paddingVertical: 15,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    ...Platform.select({
+      android: {
+        elevation: 3,
+      },
+      ios: {
+        shadowColor: "#000",
+        shadowOpacity: 0.2,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 4,
+      },
+    }),
+  },
+  addButtonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "600",
+    marginRight: 8,
+  },
+  addButtonIcon: {
+    marginTop: 2,
   },
 });
 

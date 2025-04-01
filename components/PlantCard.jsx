@@ -6,15 +6,17 @@ import {
   StyleSheet,
   Dimensions,
   Pressable,
+  TouchableOpacity,
+  Platform,
 } from "react-native";
 
-const PlantCard = ({ commonName, scientificName, onPress }) => {
+const PlantCard = ({ image, commonName, scientificName, onPress }) => {
   return (
     <View style={styles.card}>
-      <Pressable android_ripple={{ color: "#ccc" }} onPress={onPress}>
+      <TouchableOpacity activeOpacity={0.7} onPress={onPress}>
         <View style={styles.imageContainer}>
           <Image
-            // source={{ uri: image }}
+            source={{ uri: image }}
             style={styles.image}
             resizeMode="cover"
             onError={(e) =>
@@ -30,7 +32,7 @@ const PlantCard = ({ commonName, scientificName, onPress }) => {
             {scientificName}
           </Text>
         </View>
-      </Pressable>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -40,13 +42,12 @@ const styles = StyleSheet.create({
     width: Dimensions.get("window").width / 2 - 20, // Responsive width
     backgroundColor: "#FFFFFF",
     borderRadius: 15,
-    overflow: "hidden",
     margin: 10,
     elevation: 5,
     shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
   imageContainer: {
     width: "100%",
@@ -54,6 +55,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#E0E0E0", // Fallback background color
     justifyContent: "center",
     alignItems: "center",
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+    overflow: "hidden",
   },
   image: {
     width: "100%",

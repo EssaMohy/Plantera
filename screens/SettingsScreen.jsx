@@ -1,12 +1,9 @@
 import { StyleSheet, Text, View } from "react-native";
 import React from "react";
+import LightSensorComponent from "../components/LightSensorComponent";
 
 const SettingsScreen = () => {
-  return (
-    <View>
-      <Text>SettingsScreen</Text>
-    </View>
-  );
+  return <LightSensorComponent />;
 };
 
 export default SettingsScreen;
