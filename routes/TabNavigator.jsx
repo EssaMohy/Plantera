@@ -4,7 +4,7 @@ import { Platform, View, StyleSheet } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import HomeScreen from "../screens/HomeScreen";
 import DiagnoseScreen from "../screens/DaignoseScreen";
-import MyPlantsScreen from "../screens/MyPlantsSreen";
+import MyPlantsScreen from "../screens/MyPlantsScreen";
 import ScanModal from "../screens/ScanModal";
 import SettingsScreen from "../screens/SettingsScreen";
 

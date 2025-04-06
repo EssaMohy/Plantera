@@ -10,6 +10,7 @@ import React from "react";
 import { useNavigation } from "@react-navigation/native"; // Import useNavigation
 import PlantCard from "../components/PlantCard";
 import { usePlants } from "../hooks/plants";
+import LottieView from "lottie-react-native";
 
 const HomeScreen = () => {
   const { data: plants, isLoading, isError, error } = usePlants();
@@ -49,7 +50,12 @@ const HomeScreen = () => {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <LottieView
+          source={require("../assets/loading.json")} // Path to your Lottie JSON file
+          autoPlay
+          loop={false}
+          style={styles.animation}
+        />
       </View>
     );
   }
@@ -102,5 +108,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  animation: {
+    width: 300, // Adjust the width and height as needed
+    height: 300,
   },
 });

@@ -9,7 +9,7 @@ const MyPlantsScreen = () => {
       <LottieView
         source={require("../assets/plant.json")} // Path to your Lottie JSON file
         autoPlay
-        loop
+        loop={false}
         style={styles.animation}
       />
       <Text style={styles.title}>Let's get started</Text>
