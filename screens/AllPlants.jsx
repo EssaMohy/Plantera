@@ -43,6 +43,7 @@ const AllPlants = ({ navigation }) => {
   // Render each plant item
   const renderPlant = (itemData) => (
     <PlantCard
+      image={itemData.item.image}
       commonName={itemData.item.commonName}
       scientificName={itemData.item.scientificName}
       onPress={() =>
