@@ -13,6 +13,13 @@ import PlantCard from "../components/PlantCard";
 import { usePlants } from "../hooks/plants";
 import LottieView from "lottie-react-native";
 
+// Define your route names as constants to avoid typos
+const SCREENS = {
+  ALL_PLANTS: "AllPlants",
+  CATEGORY: "Category",
+  SINGLE_PLANT: "SinglePlant",
+};
+
 const HomeScreen = () => {
   const { data: plants, isLoading, isError, error } = usePlants();
   const navigation = useNavigation();
@@ -20,7 +27,7 @@ const HomeScreen = () => {
   const renderHeader = () => (
     <View style={styles.header}>
       <Text style={styles.title}>Popular Plants</Text>
-      <TouchableOpacity onPress={() => navigation.navigate("All Plants")}>
+      <TouchableOpacity onPress={() => navigation.navigate(SCREENS.ALL_PLANTS)}>
         <Text style={styles.seeAll}>See All</Text>
       </TouchableOpacity>
     </View>
@@ -33,7 +40,7 @@ const HomeScreen = () => {
         <TouchableOpacity
           style={styles.categoryCard}
           onPress={() =>
-            navigation.navigate("Category", { type: "Indoor Plants" })
+            navigation.navigate(SCREENS.CATEGORY, { type: "Indoor Plants" })
           }
         >
           <Image
@@ -46,7 +53,7 @@ const HomeScreen = () => {
         <TouchableOpacity
           style={styles.categoryCard}
           onPress={() =>
-            navigation.navigate("Category", { type: "Outdoor Plants" })
+            navigation.navigate(SCREENS.CATEGORY, { type: "Outdoor Plants" })
           }
         >
           <Image
@@ -65,7 +72,7 @@ const HomeScreen = () => {
       commonName={itemData.item.commonName}
       scientificName={itemData.item.scientificName}
       onPress={() =>
-        navigation.navigate("Single Plant", { plant: itemData.item })
+        navigation.navigate(SCREENS.SINGLE_PLANT, { plant: itemData.item })
       }
     />
   );

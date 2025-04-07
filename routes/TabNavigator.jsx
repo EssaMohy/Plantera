@@ -1,18 +1,31 @@
 import React, { useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Platform, View, StyleSheet } from "react-native";
+import { Platform, View, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import HomeScreen from "../screens/HomeScreen";
-import DiagnoseScreen from "../screens/DaignoseScreen";
+import DiagnoseScreen from "../screens/DiagnoseScreen";
 import MyPlantsScreen from "../screens/MyPlantsScreen";
 import ScanModal from "../screens/ScanModal";
-import SettingsScreen from "../screens/SettingsScreen";
+import LightScreen from "../screens/LightScreen";
 
 const Tab = createBottomTabNavigator();
 const EmptyComponent = () => null;
 
-const TabNavigator = ({ navigation }) => {
+const TabNavigator = () => {
   const [isScanModalVisible, setScanModalVisible] = useState(false);
+  const navigation = useNavigation();
+
+  const DrawerButton = () => (
+    <TouchableOpacity
+      onPress={() => navigation.openDrawer()}
+      style={styles.drawerButton}
+      testID="drawer-button"
+    >
+      <Ionicons name="menu" size={28} color="white" />
+    </TouchableOpacity>
+  );
+
   return (
     <>
       <Tab.Navigator
@@ -25,7 +38,6 @@ const TabNavigator = ({ navigation }) => {
             borderTopColor: "#E0E0E0",
             height: Platform.OS === "ios" ? 90 : 70,
             paddingBottom: Platform.OS === "ios" ? 20 : 10,
-            position: "relative",
           },
           tabBarLabelStyle: {
             fontSize: 12,
@@ -35,6 +47,7 @@ const TabNavigator = ({ navigation }) => {
             backgroundColor: "#129C52",
           },
           headerTintColor: "white",
+          headerLeft: () => <DrawerButton />,
         })}
       >
         <Tab.Screen
@@ -78,8 +91,8 @@ const TabNavigator = ({ navigation }) => {
           }}
           listeners={{
             tabPress: (e) => {
-              e.preventDefault(); // Prevent default navigation
-              setScanModalVisible(true); // Open the modal
+              e.preventDefault();
+              setScanModalVisible(true);
             },
           }}
         />
@@ -94,7 +107,7 @@ const TabNavigator = ({ navigation }) => {
         />
         <Tab.Screen
           name="Light"
-          component={SettingsScreen}
+          component={LightScreen}
           options={{
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="bulb" size={size} color={color} />
@@ -128,6 +141,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
+  },
+  drawerButton: {
+    padding: 10,
+    marginLeft: 10,
   },
 });
 

@@ -5,7 +5,7 @@ import SearchBar from "../components/SearchBar";
 import { useDiseases } from "../hooks/diseases";
 import LottieView from "lottie-react-native";
 
-const DaignoseScreen = () => {
+const DiagnoseScreen = () => {
   const { data: diseases, isLoading, isError, error } = useDiseases();
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -95,4 +95,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DaignoseScreen;
+export default DiagnoseScreen;
