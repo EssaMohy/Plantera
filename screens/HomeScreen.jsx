@@ -5,18 +5,18 @@ import {
   View,
   ActivityIndicator,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import React from "react";
-import { useNavigation } from "@react-navigation/native"; // Import useNavigation
+import { useNavigation } from "@react-navigation/native";
 import PlantCard from "../components/PlantCard";
 import { usePlants } from "../hooks/plants";
 import LottieView from "lottie-react-native";
 
 const HomeScreen = () => {
   const { data: plants, isLoading, isError, error } = usePlants();
-  const navigation = useNavigation(); // Initialize navigation
+  const navigation = useNavigation();
 
-  // Render the header section with "See All" link
   const renderHeader = () => (
     <View style={styles.header}>
       <Text style={styles.title}>Popular Plants</Text>
@@ -26,15 +26,39 @@ const HomeScreen = () => {
     </View>
   );
 
-  // Render the categories section
   const renderCategories = () => (
-    <View style={styles.header}>
+    <View style={styles.categorySection}>
       <Text style={styles.title}>Categories</Text>
-      {/* Add your categories here */}
+      <View style={styles.categoryContainer}>
+        <TouchableOpacity
+          style={styles.categoryCard}
+          onPress={() =>
+            navigation.navigate("Category", { type: "Indoor Plants" })
+          }
+        >
+          <Image
+            source={require("../assets/images/indoor.jpg")}
+            style={styles.categoryImage}
+          />
+          <Text style={styles.categoryText}>Indoor Plants</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.categoryCard}
+          onPress={() =>
+            navigation.navigate("Category", { type: "Outdoor Plants" })
+          }
+        >
+          <Image
+            source={require("../assets/images/outdoor.jpg")}
+            style={styles.categoryImage}
+          />
+          <Text style={styles.categoryText}>Outdoor Plants</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
-  // Render each plant item
   const renderPlant = (itemData) => (
     <PlantCard
       image={itemData.item.image}
@@ -46,21 +70,19 @@ const HomeScreen = () => {
     />
   );
 
-  // Show a loading indicator while fetching data
   if (isLoading) {
     return (
       <View style={styles.center}>
         <LottieView
-          source={require("../assets/loading.json")} // Path to your Lottie JSON file
+          source={require("../assets/loading.json")}
           autoPlay
-          loop={false}
+          loop={true}
           style={styles.animation}
         />
       </View>
     );
   }
 
-  // Show an error message if the fetch fails
   if (isError) {
     return (
       <View style={styles.center}>
@@ -87,17 +109,19 @@ export default HomeScreen;
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "#FFFFFF",
-    paddingBottom: 16, // Add padding at the bottom
+    paddingBottom: 32,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 8,
+    padding: 12,
+    marginTop: 8,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
+    color: "#2E7D32",
   },
   seeAll: {
     fontSize: 16,
@@ -110,7 +134,35 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   animation: {
-    width: 300, // Adjust the width and height as needed
+    width: 300,
     height: 300,
+  },
+  categorySection: {
+    marginTop: 20,
+    paddingHorizontal: 12,
+  },
+  categoryContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+  categoryCard: {
+    width: "48%",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    overflow: "hidden",
+    elevation: 3,
+  },
+  categoryImage: {
+    width: "100%",
+    height: 120,
+    resizeMode: "cover",
+  },
+  categoryText: {
+    textAlign: "center",
+    paddingVertical: 8,
+    fontWeight: "600",
+    fontSize: 16,
+    color: "#333",
   },
 });

@@ -1,15 +1,9 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  FlatList,
-  StyleSheet,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, FlatList, StyleSheet } from "react-native";
 import PlantCard from "../components/PlantCard";
 import SearchBar from "../components/SearchBar";
 import { usePlants } from "../hooks/plants";
+import LottieView from "lottie-react-native";
 
 const AllPlants = ({ navigation }) => {
   const { data: plants, isLoading, isError, error } = usePlants();
@@ -19,7 +13,12 @@ const AllPlants = ({ navigation }) => {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <LottieView
+          source={require("../assets/loading.json")}
+          autoPlay
+          loop={true}
+          style={styles.animation}
+        />
       </View>
     );
   }
@@ -40,7 +39,6 @@ const AllPlants = ({ navigation }) => {
       plant.scientificName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Render each plant item
   const renderPlant = (itemData) => (
     <PlantCard
       image={itemData.item.image}
@@ -65,8 +63,8 @@ const AllPlants = ({ navigation }) => {
       {/* Plant List */}
       <FlatList
         data={filteredPlants}
-        keyExtractor={(plant) => plant._id} // Use _id as the key
-        renderItem={renderPlant} // Use PlantCard to render each item
+        keyExtractor={(plant) => plant._id}
+        renderItem={renderPlant}
         numColumns={2}
         contentContainerStyle={styles.listContainer}
       />
@@ -89,6 +87,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  animation: {
+    width: 300,
+    height: 300,
   },
 });
 

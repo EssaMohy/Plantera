@@ -1,48 +1,98 @@
-import { FlatList, StyleSheet, Text, View } from "react-native";
-import React from "react";
+import React, { useState } from "react";
+import { View, Text, FlatList, StyleSheet } from "react-native";
+import DiseaseCard from "../components/DiseaseCard";
 import SearchBar from "../components/SearchBar";
-import PlantCard from "../components/PlantCard";
+import { useDiseases } from "../hooks/diseases";
+import LottieView from "lottie-react-native";
 
-const DiagnoseScreen = () => {
-  // Render the header section
-  const renderHeader = () => (
-    <View>
-      <View style={styles.bar}>
-        <SearchBar name="Search Disease" />
+const DaignoseScreen = () => {
+  const { data: diseases, isLoading, isError, error } = useDiseases();
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <View style={styles.center}>
+        <LottieView
+          source={require("../assets/loading.json")}
+          autoPlay
+          loop={true}
+          style={styles.animation}
+        />
       </View>
-      <Text style={styles.title}>Common Diseases</Text>
-    </View>
-  );
+    );
+  }
 
-  // Render the categories section
-  const renderCategories = () => (
-    <View>
-      <Text style={styles.title}>Categories</Text>
-      {/* Add your categories content here */}
-    </View>
+  if (isError) {
+    return (
+      <View style={styles.center}>
+        <Text>Error fetching diseases: {error.message}</Text>
+      </View>
+    );
+  }
+
+  const filteredDiseases = diseases.filter((disease) => {
+    const nameMatch = disease.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+
+    const otherNamesMatch = disease.otherNames.some((otherName) =>
+      otherName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    return nameMatch || otherNamesMatch;
+  });
+
+  const renderDisease = ({ item }) => (
+    <DiseaseCard
+      image={item.image}
+      name={item.name}
+      onPress={() => console.log("pressed", item._id)}
+    />
   );
 
   return (
     <View style={styles.container}>
-      {renderHeader()}
-      {renderCategories()}
+      <View style={styles.bar}>
+        <SearchBar
+          name="Search Diseases"
+          value={searchTerm}
+          onChange={setSearchTerm}
+        />
+      </View>
+
+      {/* Plant List */}
+      <FlatList
+        data={filteredDiseases}
+        keyExtractor={(disease) => disease._id}
+        renderItem={renderDisease}
+        numColumns={2}
+        contentContainerStyle={styles.listContainer}
+      />
     </View>
   );
 };
 
-export default DiagnoseScreen;
-
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     backgroundColor: "#FFFFFF",
-    paddingBottom: 16, // Add padding at the bottom
   },
   bar: {
     padding: 8,
   },
-  title: {
-    padding: 8,
-    fontSize: 24,
-    fontWeight: "bold",
+  listContainer: {
+    paddingBottom: 16,
+  },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  animation: {
+    width: 300,
+    height: 300,
   },
 });
+
+export default DaignoseScreen;

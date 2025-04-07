@@ -5,9 +5,7 @@ import {
   Image,
   StyleSheet,
   Dimensions,
-  Pressable,
   TouchableOpacity,
-  Platform,
 } from "react-native";
 
 const PlantCard = ({ image, commonName, scientificName, onPress }) => {
@@ -62,6 +60,7 @@ const styles = StyleSheet.create({
   image: {
     width: "100%",
     height: "100%",
+    resizeMode: "cover",
   },
   textContainer: {
     padding: 10,
