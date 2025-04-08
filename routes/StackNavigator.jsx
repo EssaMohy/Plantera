@@ -5,7 +5,8 @@ import SplashScreen from "../screens/SplashScreen";
 import AllPlants from "../screens/AllPlants";
 import SinglePlantScreen from "../screens/SinglePlantScreen";
 import CategoryScreen from "../screens/CategoryScreen";
-
+import HomeScreen from "../screens/HomeScreen";
+import ArticleDetailsScreen from "../screens/ArticleDetailsScreen";
 const Stack = createStackNavigator();
 
 const StackNavigator = () => {
@@ -36,6 +37,8 @@ const StackNavigator = () => {
         component={CategoryScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="ArticleDetails" component={ArticleDetailsScreen} />
     </Stack.Navigator>
   );
 };

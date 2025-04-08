@@ -1,19 +1,21 @@
 import {
-  FlatList,
+  ScrollView,
   StyleSheet,
   Text,
   View,
   ActivityIndicator,
   TouchableOpacity,
   Image,
+  FlatList,
 } from "react-native";
 import React from "react";
 import { useNavigation } from "@react-navigation/native";
 import PlantCard from "../components/PlantCard";
 import { usePlants } from "../hooks/plants";
 import LottieView from "lottie-react-native";
+import { ARTICLES } from "../data/articleData";
+import ArticleCard from "../components/ArticleCard";
 
-// Define your route names as constants to avoid typos
 const SCREENS = {
   ALL_PLANTS: "AllPlants",
   CATEGORY: "Category",
@@ -77,6 +79,15 @@ const HomeScreen = () => {
     />
   );
 
+  const renderArticle = (data) => (
+    <ArticleCard
+      image={data.item.image}
+      title={data.item.title}
+      subtitle={data.item.subtitle}
+      onPress={() => navigation.navigate("ArticleDetails", { articleId: data.item.id })}
+    />
+  );
+
   if (isLoading) {
     return (
       <View style={styles.center}>
@@ -99,24 +110,43 @@ const HomeScreen = () => {
   }
 
   return (
-    <FlatList
-      data={plants.slice(0, 6)}
-      keyExtractor={(item) => item._id}
-      renderItem={renderPlant}
-      numColumns={2}
-      ListHeaderComponent={renderHeader}
-      ListFooterComponent={renderCategories}
-      contentContainerStyle={styles.container}
-    />
+    <ScrollView style={styles.container} nestedScrollEnabled>
+      <FlatList
+        data={ARTICLES}
+        keyExtractor={(item) => item.id}
+        renderItem={renderArticle}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.container1}
+      />
+   
+
+<FlatList
+  data={plants.slice(0, 6)}
+  keyExtractor={(item) => item._id}
+  renderItem={renderPlant}
+  numColumns={2}
+  ListHeaderComponent={renderHeader}
+  ListFooterComponent={renderCategories}
+  scrollEnabled={false}
+  contentContainerStyle={styles.plantsListContainer}
+/>
+
+    </ScrollView>
   );
 };
 
 export default HomeScreen;
-
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "#FFFFFF",
-    paddingBottom: 32,
+    paddingTop: 50,
+    paddingBottom: 0,
+  },
+  container1: {
+    paddingTop: 20,
+    paddingBottom: 20,
+    paddingLeft: 12,
   },
   header: {
     flexDirection: "row",
@@ -139,6 +169,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#fff",
   },
   animation: {
     width: 300,
@@ -172,4 +203,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
   },
+  plantsListContainer: {
+    paddingBottom: 100,
+    paddingHorizontal: 12,
+  },
+  articlesTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#2E7D32",
+    paddingLeft: 12,
+    paddingTop: 20,
+  },
+  
 });
