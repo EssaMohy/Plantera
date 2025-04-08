@@ -79,7 +79,7 @@ const CategoryScreen = () => {
               commonName={item.commonName}
               scientificName={item.scientificName}
               onPress={() =>
-                navigation.navigate("Single Plant", { plant: item })
+                navigation.navigate("SinglePlant", { plant: item })
               }
             />
           )}
@@ -128,8 +128,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   list: {
-    paddingHorizontal: 10,
-    paddingBottom: 20,
+    paddingBottom: 16,
   },
   center: {
     flex: 1,

@@ -1,12 +1,10 @@
 import {
-  ScrollView,
+  FlatList,
   StyleSheet,
   Text,
   View,
-  ActivityIndicator,
   TouchableOpacity,
   Image,
-  FlatList,
 } from "react-native";
 import React from "react";
 import { useNavigation } from "@react-navigation/native";
@@ -27,12 +25,30 @@ const HomeScreen = () => {
   const navigation = useNavigation();
 
   const renderHeader = () => (
-    <View style={styles.header}>
-      <Text style={styles.title}>Popular Plants</Text>
-      <TouchableOpacity onPress={() => navigation.navigate(SCREENS.ALL_PLANTS)}>
-        <Text style={styles.seeAll}>See All</Text>
-      </TouchableOpacity>
-    </View>
+    <>
+      {/* Articles Section */}
+      <View style={styles.articlesSection}>
+        <Text style={styles.articlesTitle}>Articles</Text>
+        <FlatList
+          data={ARTICLES}
+          keyExtractor={(item) => item.id}
+          renderItem={renderArticle}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.articlesContainer}
+        />
+      </View>
+
+      {/* Plants Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Popular Plants</Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate(SCREENS.ALL_PLANTS)}
+        >
+          <Text style={styles.seeAll}>See All</Text>
+        </TouchableOpacity>
+      </View>
+    </>
   );
 
   const renderCategories = () => (
@@ -84,7 +100,9 @@ const HomeScreen = () => {
       image={data.item.image}
       title={data.item.title}
       subtitle={data.item.subtitle}
-      onPress={() => navigation.navigate("ArticleDetails", { articleId: data.item.id })}
+      onPress={() =>
+        navigation.navigate("ArticleDetails", { articleId: data.item.id })
+      }
     />
   );
 
@@ -110,60 +128,56 @@ const HomeScreen = () => {
   }
 
   return (
-    <ScrollView style={styles.container} nestedScrollEnabled>
-      <FlatList
-        data={ARTICLES}
-        keyExtractor={(item) => item.id}
-        renderItem={renderArticle}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.container1}
-      />
-   
-
-<FlatList
-  data={plants.slice(0, 6)}
-  keyExtractor={(item) => item._id}
-  renderItem={renderPlant}
-  numColumns={2}
-  ListHeaderComponent={renderHeader}
-  ListFooterComponent={renderCategories}
-  scrollEnabled={false}
-  contentContainerStyle={styles.plantsListContainer}
-/>
-
-    </ScrollView>
+    <FlatList
+      data={plants.slice(0, 6)}
+      keyExtractor={(item) => item._id}
+      renderItem={renderPlant}
+      numColumns={2}
+      ListHeaderComponent={renderHeader}
+      ListFooterComponent={renderCategories}
+      contentContainerStyle={styles.container}
+    />
   );
 };
 
 export default HomeScreen;
+
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "#FFFFFF",
-    paddingTop: 50,
-    paddingBottom: 0,
   },
-  container1: {
-    paddingTop: 20,
+  articlesSection: {
+    marginBottom: 10,
+  },
+  articlesTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#2E7D32",
+
+    margin: 10,
+    paddingLeft: 2,
+  },
+  articlesContainer: {
     paddingBottom: 20,
-    paddingLeft: 12,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 12,
     marginTop: 8,
+    marginBottom: 8,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#2E7D32",
+    marginLeft: 10,
   },
   seeAll: {
     fontSize: 16,
     color: "#14AE5C",
     fontWeight: "bold",
+    marginRight: 10,
   },
   center: {
     flex: 1,
@@ -177,12 +191,12 @@ const styles = StyleSheet.create({
   },
   categorySection: {
     marginTop: 20,
-    paddingHorizontal: 12,
   },
   categoryContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 12,
+    margin: 12,
+    paddingBottom: 20,
   },
   categoryCard: {
     width: "48%",
@@ -203,16 +217,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
   },
-  plantsListContainer: {
-    paddingBottom: 100,
-    paddingHorizontal: 12,
-  },
-  articlesTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#2E7D32",
-    paddingLeft: 12,
-    paddingTop: 20,
-  },
-  
 });
