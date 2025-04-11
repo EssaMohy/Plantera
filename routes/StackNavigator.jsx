@@ -7,6 +7,7 @@ import SinglePlantScreen from "../screens/SinglePlantScreen";
 import CategoryScreen from "../screens/CategoryScreen";
 import HomeScreen from "../screens/HomeScreen";
 import ArticleDetailsScreen from "../screens/ArticleDetailsScreen";
+import MyPlantsScreen from "../screens/MyPlantsScreen";
 const Stack = createStackNavigator();
 
 const StackNavigator = () => {
@@ -68,6 +69,11 @@ const StackNavigator = () => {
             borderBottomWidth: 0, // Removes the bottom border
           },
         }}
+      />
+      <Stack.Screen
+        name="MyPlants"
+        component={MyPlantsScreen}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );

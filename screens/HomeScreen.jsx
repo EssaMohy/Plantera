@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   },
   seeAll: {
     fontSize: 16,
-    color: "#14AE5C",
+    color: "#2E7D32",
     fontWeight: "bold",
     marginRight: 10,
   },

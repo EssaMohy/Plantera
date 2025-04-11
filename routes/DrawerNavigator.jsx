@@ -10,32 +10,81 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import StackNavigator from "./StackNavigator";
 import ProfileScreen from "../screens/ProfileScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
+import { useAuth } from "../context/AuthContext";
 
 const Drawer = createDrawerNavigator();
 
-const CustomDrawerContent = (props) => (
-  <DrawerContentScrollView
-    {...props}
-    contentContainerStyle={styles.drawerContainer}
-  >
-    <View style={styles.drawerHeader}>
-      <Ionicons name="leaf" size={32} color="#2E7D32" />
-      <Text style={styles.headerText}>Plantarea</Text>
-    </View>
-    <DrawerItemList
-      {...props}
-      itemStyle={styles.drawerItem}
-      labelStyle={styles.drawerLabel}
-    />
-  </DrawerContentScrollView>
-);
+const CustomDrawerContent = (props) => {
+  const { userInfo, logout } = useAuth();
 
-// Custom drawer button component with specific color
+  const handleLogout = () => {
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: () => logout(),
+      },
+    ]);
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <DrawerContentScrollView
+        {...props}
+        contentContainerStyle={styles.drawerScroll}
+      >
+        {/* Header */}
+        <View style={styles.drawerHeader}>
+          <Ionicons name="leaf" size={32} color="#2E7D32" />
+          <Text style={styles.headerText}>Plantarea</Text>
+        </View>
+
+        {/* User Info */}
+        <View style={styles.userInfoContainer}>
+          <View style={styles.userAvatar}>
+            <Text style={styles.userInitials}>
+              {userInfo?.firstName?.charAt(0) || ""}
+              {userInfo?.lastName?.charAt(0) || ""}
+            </Text>
+          </View>
+          <Text style={styles.userName}>
+            {userInfo?.firstName} {userInfo?.lastName}
+          </Text>
+          <Text style={styles.userEmail}>{userInfo?.email}</Text>
+        </View>
+
+        {/* Drawer Items */}
+        <DrawerItemList
+          {...props}
+          itemStyle={styles.drawerItem}
+          labelStyle={styles.drawerLabel}
+        />
+      </DrawerContentScrollView>
+
+      {/* Logout at Bottom */}
+      <TouchableOpacity
+        style={styles.logoutDrawerButton}
+        onPress={handleLogout}
+      >
+        <Ionicons
+          name="log-out-outline"
+          size={22}
+          color="#FF5252"
+          style={styles.logoutDrawerIcon}
+        />
+        <Text style={styles.logoutDrawerText}>Logout</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
 const CustomDrawerButton = ({ navigation }) => (
   <TouchableOpacity
     onPress={() => navigation.toggleDrawer()}
@@ -46,23 +95,20 @@ const CustomDrawerButton = ({ navigation }) => (
   </TouchableOpacity>
 );
 
-// New notification button component
-const NotificationButton = ({ navigation }) => {
-  return (
-    <TouchableOpacity
-      style={styles.notificationButton}
-      onPress={() => navigation.navigate("Notifications")}
-      testID="notification-button"
-    >
-      <View style={styles.notificationIconContainer}>
-        <Ionicons name="notifications" size={24} color="#2E7D32" />
-        <View style={styles.notificationBadge}>
-          <Text style={styles.notificationBadgeText}>3</Text>
-        </View>
+const NotificationButton = ({ navigation }) => (
+  <TouchableOpacity
+    style={styles.notificationButton}
+    onPress={() => navigation.navigate("Notifications")}
+    testID="notification-button"
+  >
+    <View style={styles.notificationIconContainer}>
+      <Ionicons name="notifications" size={24} color="#2E7D32" />
+      <View style={styles.notificationBadge}>
+        <Text style={styles.notificationBadgeText}>3</Text>
       </View>
-    </TouchableOpacity>
-  );
-};
+    </View>
+  </TouchableOpacity>
+);
 
 const DrawerNavigator = () => {
   return (
@@ -74,13 +120,11 @@ const DrawerNavigator = () => {
           backgroundColor: "white",
           elevation: 0,
           shadowOpacity: 0,
-          borderBottomWidth: 0,
         },
-        headerTintColor: "white", // Leave this as is
+        headerTintColor: "#2E7D32",
         headerTitleStyle: {
           fontWeight: "bold",
           fontSize: 20,
-          color: "#2E7D32",
         },
         headerTitleAlign: "center",
         headerLeft: () => <CustomDrawerButton navigation={navigation} />,
@@ -116,22 +160,16 @@ const DrawerNavigator = () => {
       <Drawer.Screen
         name="MainStack"
         component={StackNavigator}
-        options={{
-          title: "Home",
-          headerShown: false,
-        }}
+        options={{ title: "Home", headerShown: false }}
       />
-
       <Drawer.Screen name="Profile" component={ProfileScreen} />
-
       <Drawer.Screen name="Notifications" component={NotificationsScreen} />
     </Drawer.Navigator>
   );
 };
 
 const styles = StyleSheet.create({
-  drawerContainer: {
-    flex: 1,
+  drawerScroll: {
     paddingTop: 20,
   },
   drawerHeader: {
@@ -140,7 +178,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
-    marginBottom: 10,
   },
   headerText: {
     marginLeft: 15,
@@ -148,13 +185,41 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#2E7D32",
   },
-  drawerItem: {
-    flexDirection: "row",
+  userInfoContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+    marginBottom: 10,
     alignItems: "center",
+  },
+  userAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#2E7D32",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  userInitials: {
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333333",
+  },
+  userEmail: {
+    fontSize: 14,
+    color: "#666666",
+  },
+  drawerItem: {
     paddingVertical: 8,
   },
   drawerLabel: {
-    marginLeft: -10,
     fontSize: 16,
     fontWeight: "500",
   },
@@ -186,6 +251,22 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 10,
     fontWeight: "bold",
+  },
+  logoutDrawerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+    borderTopColor: "#e0e0e0",
+  },
+  logoutDrawerIcon: {
+    marginRight: 10,
+  },
+  logoutDrawerText: {
+    fontSize: 16,
+    color: "#FF5252",
+    fontWeight: "500",
   },
 });
 

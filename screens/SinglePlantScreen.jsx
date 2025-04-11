@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,10 +8,13 @@ import {
   Image,
   Dimensions,
   Platform,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
 import CareGuideCard from "../components/CareGuideCard";
+import { useAddToMyPlants } from "../hooks/myPlants"; // Import the hook
 
 const { width } = Dimensions.get("screen");
 
@@ -19,6 +22,32 @@ const SinglePlantScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { plant } = route.params; // Get plant data from navigation params
+
+  // Use the mutation hook
+  const addToMyPlantsMutation = useAddToMyPlants();
+
+  // Handle adding plant to My Plants
+  const handleAddToMyPlants = () => {
+    addToMyPlantsMutation.mutate(plant._id, {
+      onSuccess: (data) => {
+        // Show success message
+        Alert.alert("Success", `${plant.commonName} added to your plants!`, [
+          {
+            text: "OK",
+            onPress: () => navigation.navigate("Tabs", { screen: "My Plants" }),
+          },
+        ]);
+      },
+      onError: (error) => {
+        // Show error message
+        Alert.alert(
+          "Error",
+          error.response?.data?.message ||
+            "Failed to add plant. Please try again."
+        );
+      },
+    });
+  };
 
   return (
     <View style={styles.container}>
@@ -86,9 +115,25 @@ const SinglePlantScreen = () => {
         </View>
       </ScrollView>
       <View style={{ height: 100 }} />
-      <TouchableOpacity activeOpacity={0.7} style={styles.addButton}>
-        <Icon name="add" size={22} color="white" style={styles.addButtonIcon} />
-        <Text style={styles.addButtonText}>Add to My Plants</Text>
+      <TouchableOpacity
+        activeOpacity={0.7}
+        style={styles.addButton}
+        onPress={handleAddToMyPlants}
+        disabled={addToMyPlantsMutation.isPending}
+      >
+        {addToMyPlantsMutation.isPending ? (
+          <ActivityIndicator size="small" color="white" />
+        ) : (
+          <>
+            <Icon
+              name="add"
+              size={22}
+              color="white"
+              style={styles.addButtonIcon}
+            />
+            <Text style={styles.addButtonText}>Add to My Plants</Text>
+          </>
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -156,6 +201,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#ddd",
     marginVertical: 12,
   },
+  text: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: "#444",
+  },
   addButton: {
     position: "absolute",
     bottom: 20,
@@ -183,7 +233,7 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 18,
     fontWeight: "600",
-    marginRight: 8,
+    marginLeft: 8,
   },
   addButtonIcon: {
     marginTop: 2,
