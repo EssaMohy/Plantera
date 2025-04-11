@@ -33,11 +33,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#ffffff", // Set your desired background color
+    backgroundColor: "#ffffff",
   },
   animation: {
-    width: 300,
-    height: 300,
+    width: 185, // Reduced from 300 to 150 (50% smaller)
+    height: 185, // Reduced from 300 to 150 (50% smaller)
   },
 });
 
