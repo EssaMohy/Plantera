@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Dimensions } from "react-native";
 import LottieView from "lottie-react-native";
 
 const SplashScreen = ({ navigation }) => {
@@ -23,10 +23,13 @@ const SplashScreen = ({ navigation }) => {
         autoPlay
         loop={true}
         style={styles.animation}
+        resizeMode="contain"
       />
     </View>
   );
 };
+
+const { width, height } = Dimensions.get("window");
 
 const styles = StyleSheet.create({
   container: {
@@ -36,8 +39,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   animation: {
-    width: 185, // Reduced from 300 to 150 (50% smaller)
-    height: 185, // Reduced from 300 to 150 (50% smaller)
+    width: 251,
+    height: 251,
+    // Ensure the animation is perfectly centered
+    position: "absolute",
+    top: height / 2 - 125, // Center vertically (half of screen height - half of animation height)
+    left: width / 2 - 125, // Center horizontally (half of screen width - half of animation width)
   },
 });
 
