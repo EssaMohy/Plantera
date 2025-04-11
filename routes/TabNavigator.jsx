@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Platform, View, StyleSheet, TouchableOpacity } from "react-native";
+import {
+  Platform,
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+} from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import HomeScreen from "../screens/HomeScreen";
@@ -22,15 +28,33 @@ const TabNavigator = () => {
       style={styles.drawerButton}
       testID="drawer-button"
     >
-      <Ionicons name="menu" size={28} color="white" />
+      <Ionicons name="menu" size={28} color="#2E7D32" />
     </TouchableOpacity>
   );
+
+  // New notification button component
+  const NotificationButton = () => {
+    return (
+      <TouchableOpacity
+        style={styles.notificationButton}
+        onPress={() => navigation.navigate("Notifications")}
+        testID="notification-button"
+      >
+        <View style={styles.notificationIconContainer}>
+          <Ionicons name="notifications" size={24} color="#2E7D32" />
+          <View style={styles.notificationBadge}>
+            <Text style={styles.notificationBadgeText}>3</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <>
       <Tab.Navigator
         screenOptions={({ route }) => ({
-          tabBarActiveTintColor: "#14AE5C",
+          tabBarActiveTintColor: "#2E7D32",
           tabBarInactiveTintColor: "#525252",
           tabBarStyle: {
             backgroundColor: "#FFFFFF",
@@ -44,10 +68,20 @@ const TabNavigator = () => {
             fontWeight: "bold",
           },
           headerStyle: {
-            backgroundColor: "#129C52",
+            backgroundColor: "white",
+            borderBottomWidth: 0,
+            elevation: 0,
+            shadowOpacity: 0,
           },
-          headerTintColor: "white",
+          headerTitleStyle: {
+            fontWeight: "bold",
+            fontSize: 20,
+            color: "#2E7D32",
+          },
+          headerTintColor: "#2E7D32",
+          headerTitleAlign: "center",
           headerLeft: () => <DrawerButton />,
+          headerRight: () => <NotificationButton />,
         })}
       >
         <Tab.Screen
@@ -97,7 +131,7 @@ const TabNavigator = () => {
           }}
         />
         <Tab.Screen
-          name="MyPlants"
+          name="My Plants"
           component={MyPlantsScreen}
           options={{
             tabBarIcon: ({ color, size }) => (
@@ -130,7 +164,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   scanIconBackground: {
-    backgroundColor: "#14AE5C",
+    backgroundColor: "#2E7D32",
     width: 70,
     height: 70,
     borderRadius: 35,
@@ -145,6 +179,31 @@ const styles = StyleSheet.create({
   drawerButton: {
     padding: 10,
     marginLeft: 10,
+  },
+  notificationButton: {
+    padding: 10,
+    marginRight: 10,
+  },
+  notificationIconContainer: {
+    position: "relative",
+  },
+  notificationBadge: {
+    position: "absolute",
+    top: -5,
+    right: -8,
+    backgroundColor: "#FF5252",
+    borderRadius: 12,
+    width: 18,
+    height: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "#FFFFFF",
+  },
+  notificationBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "bold",
   },
 });
 

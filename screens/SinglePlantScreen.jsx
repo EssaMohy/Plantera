@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     bottom: 20,
     left: 20,
     right: 20,
-    backgroundColor: "#14AE5C", // Green color
+    backgroundColor: "#2E7D32", // Green color
     borderRadius: 25,
     paddingVertical: 15,
     flexDirection: "row",

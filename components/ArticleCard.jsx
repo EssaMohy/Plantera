@@ -1,17 +1,25 @@
 import React from "react";
-import { View, Text, Image, StyleSheet, Pressable } from "react-native";
+import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 
 const ArticleCard = ({ image, title, subtitle, onPress }) => {
   return (
-    <Pressable onPress={onPress} style={styles.card}>
+    <TouchableOpacity activeOpacity={0.7} onPress={onPress} style={styles.card}>
       <View style={styles.imageContainer}>
-        <Image source={{ uri: image }} style={styles.image} resizeMode="cover" />
+        <Image
+          source={{ uri: image }}
+          style={styles.image}
+          resizeMode="cover"
+        />
       </View>
       <View style={styles.textContainer}>
-        <Text style={styles.title} numberOfLines={1}>{title}</Text>
-        <Text style={styles.subtitle} numberOfLines={2}>{subtitle}</Text>
+        <Text style={styles.title} numberOfLines={1}>
+          {title}
+        </Text>
+        <Text style={styles.subtitle} numberOfLines={2}>
+          {subtitle}
+        </Text>
       </View>
-    </Pressable>
+    </TouchableOpacity>
   );
 };
 

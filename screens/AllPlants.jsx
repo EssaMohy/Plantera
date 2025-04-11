@@ -45,7 +45,7 @@ const AllPlants = ({ navigation }) => {
       commonName={itemData.item.commonName}
       scientificName={itemData.item.scientificName}
       onPress={() =>
-        navigation.navigate("Single Plant", { plant: itemData.item })
+        navigation.navigate("SinglePlant", { plant: itemData.item })
       }
     />
   );
