@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ImageBackground,
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -82,11 +83,18 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
+     <ImageBackground
+      source={require("../assets/images/background.jpg")}
+      style={styles.backgroundImage}
+      resizeMode="cover"
+    >
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1 }}
+     // style={{ flex: 1 }}
+     style={styles.keyboardAvoidingView}
     >
       <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.content}>
         <View style={styles.logoContainer}>
           <Ionicons name="leaf" size={60} color="#2E7D32" />
           <Text style={styles.logoText}>Plantarea</Text>
@@ -189,17 +197,32 @@ const LoginScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
         </View>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
+   </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   container: {
-    flexGrow: 1,
-    backgroundColor: "#FFFFFF",
-    justifyContent: "center",
+   // justifyContent: "center",
+      flexGrow: 1,
+   
+  },
+  content: {
+    flex: 1,
     padding: 20,
+    minHeight: '100%',
+    justifyContent: 'center',
   },
   logoContainer: {
     alignItems: "center",
@@ -213,6 +236,14 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     width: "100%",
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
   },
   welcomeText: {
     fontSize: 24,
