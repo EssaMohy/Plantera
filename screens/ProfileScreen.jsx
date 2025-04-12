@@ -25,6 +25,18 @@ const ProfileScreen = ({ navigation }) => {
     ]);
   };
 
+  const navigateWithErrorHandling = (screenName) => {
+    try {
+      navigation.navigate(screenName);
+    } catch (error) {
+      console.error(`Error navigating to ${screenName}:`, error);
+      Alert.alert(
+        "Navigation Error",
+        `Unable to navigate to ${screenName}. Please try again later.`
+      );
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       {/* Profile Header */}
@@ -51,7 +63,13 @@ const ProfileScreen = ({ navigation }) => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account Settings</Text>
 
-        <TouchableOpacity style={styles.option}>
+        <TouchableOpacity
+          style={styles.option}
+          onPress={() =>
+            navigation.navigate("MainStack", { screen: "EditProfile" })
+          }
+          testID="edit-profile-button"
+        >
           <Ionicons
             name="person-outline"
             size={24}
@@ -62,7 +80,13 @@ const ProfileScreen = ({ navigation }) => {
           <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.option}>
+        <TouchableOpacity
+          style={styles.option}
+          onPress={() =>
+            navigation.navigate("MainStack", { screen: "ChangePassword" })
+          }
+          testID="change-password-button"
+        >
           <Ionicons
             name="lock-closed-outline"
             size={24}
@@ -73,7 +97,15 @@ const ProfileScreen = ({ navigation }) => {
           <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.option}>
+        <TouchableOpacity
+          style={styles.option}
+          onPress={() => {
+            Alert.alert(
+              "Coming Soon",
+              "Notification settings will be available in a future update."
+            );
+          }}
+        >
           <Ionicons
             name="notifications-outline"
             size={24}
@@ -89,7 +121,15 @@ const ProfileScreen = ({ navigation }) => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>App Settings</Text>
 
-        <TouchableOpacity style={styles.option}>
+        <TouchableOpacity
+          style={styles.option}
+          onPress={() => {
+            Alert.alert(
+              "Coming Soon",
+              "Language settings will be available in a future update."
+            );
+          }}
+        >
           <Ionicons
             name="globe-outline"
             size={24}
@@ -103,7 +143,15 @@ const ProfileScreen = ({ navigation }) => {
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.option}>
+        <TouchableOpacity
+          style={styles.option}
+          onPress={() => {
+            Alert.alert(
+              "Coming Soon",
+              "Dark mode will be available in a future update."
+            );
+          }}
+        >
           <Ionicons
             name="moon-outline"
             size={24}
@@ -122,7 +170,15 @@ const ProfileScreen = ({ navigation }) => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Help & Support</Text>
 
-        <TouchableOpacity style={styles.option}>
+        <TouchableOpacity
+          style={styles.option}
+          onPress={() => {
+            Alert.alert(
+              "About Plantarea",
+              "Plantarea v1.0.0 - A plant care and identification application."
+            );
+          }}
+        >
           <Ionicons
             name="information-circle-outline"
             size={24}
@@ -133,7 +189,15 @@ const ProfileScreen = ({ navigation }) => {
           <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.option}>
+        <TouchableOpacity
+          style={styles.option}
+          onPress={() => {
+            Alert.alert(
+              "Coming Soon",
+              "FAQ section will be available in a future update."
+            );
+          }}
+        >
           <Ionicons
             name="help-circle-outline"
             size={24}
@@ -144,7 +208,15 @@ const ProfileScreen = ({ navigation }) => {
           <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.option}>
+        <TouchableOpacity
+          style={styles.option}
+          onPress={() => {
+            Alert.alert(
+              "Contact Support",
+              "For any issues or questions, please email us at support@plantarea.com"
+            );
+          }}
+        >
           <Ionicons
             name="mail-outline"
             size={24}

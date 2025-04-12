@@ -8,6 +8,10 @@ import CategoryScreen from "../screens/CategoryScreen";
 import HomeScreen from "../screens/HomeScreen";
 import ArticleDetailsScreen from "../screens/ArticleDetailsScreen";
 import MyPlantsScreen from "../screens/MyPlantsScreen";
+import EditProfileScreen from "../screens/EditProfileScreen";
+import ChangePasswordScreen from "../screens/ChangePasswordScreen";
+import DrawerNavigator from "./DrawerNavigator";
+
 const Stack = createStackNavigator();
 
 const StackNavigator = () => {
@@ -74,6 +78,42 @@ const StackNavigator = () => {
         name="MyPlants"
         component={MyPlantsScreen}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="EditProfile"
+        component={EditProfileScreen}
+        options={{
+          title: "Edit Profile",
+          headerTintColor: "#2E7D32",
+          headerTitleStyle: {
+            fontWeight: "bold",
+            color: "#2E7D32",
+          },
+          headerTitleAlign: "center",
+          headerStyle: {
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0,
+          },
+        }}
+      />
+      <Stack.Screen
+        name="ChangePassword"
+        component={ChangePasswordScreen}
+        options={{
+          title: "Change Password",
+          headerTintColor: "#2E7D32",
+          headerTitleStyle: {
+            fontWeight: "bold",
+            color: "#2E7D32",
+          },
+          headerTitleAlign: "center",
+          headerStyle: {
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0,
+          },
+        }}
       />
     </Stack.Navigator>
   );

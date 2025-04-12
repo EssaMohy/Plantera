@@ -111,6 +111,95 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Update profile function
+  const updateProfile = async (updateData) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await axios.patch(
+        `${API_URL}/auth/updateMe`,
+        updateData,
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
+
+      const updatedUser = response.data.data.user;
+
+      // Update user info in state and storage
+      setUserInfo(updatedUser);
+      await AsyncStorage.setItem("userInfo", JSON.stringify(updatedUser));
+
+      setIsLoading(false);
+      return { success: true, user: updatedUser };
+    } catch (error) {
+      setIsLoading(false);
+
+      // Handle specific error messages
+      if (error.response) {
+        setError(error.response.data.message || "Profile update failed");
+      } else {
+        setError("Network error. Please check your connection.");
+      }
+
+      return {
+        success: false,
+        error: error.response?.data?.message || "Update failed",
+      };
+    }
+  };
+
+  // Change password function
+  const changePassword = async (currentPassword, newPassword) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await axios.post(
+        `${API_URL}/auth/changePassword`,
+        {
+          currentPassword,
+          newPassword,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
+
+      const { token, data } = response.data;
+
+      // Update token and user info
+      setUserToken(token);
+      setUserInfo(data.user);
+      storeUserData(token, data.user);
+
+      // Update axios headers with new token
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+      setIsLoading(false);
+      return { success: true };
+    } catch (error) {
+      setIsLoading(false);
+
+      // Handle specific error messages
+      if (error.response) {
+        setError(error.response.data.message || "Password change failed");
+      } else {
+        setError("Network error. Please check your connection.");
+      }
+
+      return {
+        success: false,
+        error: error.response?.data?.message || "Password change failed",
+      };
+    }
+  };
+
   // Logout function
   const logout = async () => {
     setIsLoading(true);
@@ -163,6 +252,8 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         register,
+        updateProfile,
+        changePassword,
         isLoading,
         userToken,
         userInfo,
