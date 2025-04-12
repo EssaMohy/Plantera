@@ -7,6 +7,7 @@ import {
   ScrollView,
   Image,
   Alert,
+  ImageBackground
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
@@ -39,8 +40,16 @@ const ProfileScreen = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Profile Header */}
-      <View style={styles.header}>
+      <ImageBackground
+  source={require("../assets/images/6.png")}
+  style={styles.header}
+  resizeMode="cover"
+>
+  <View style={[styles.overlay, { backgroundColor: "white" }]}>
+    
+  </View>
+
+
         <View style={styles.profileImageContainer}>
           <View style={styles.profileImage}>
             <Text style={styles.profileInitials}>
@@ -57,7 +66,8 @@ const ProfileScreen = ({ navigation }) => {
           {userInfo?.firstName} {userInfo?.lastName}
         </Text>
         <Text style={styles.email}>{userInfo?.email}</Text>
-      </View>
+     </ImageBackground>
+     {/*  </View> */}
 
       {/* Account Settings */}
       <View style={styles.section}>
@@ -252,11 +262,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#F7F7F7",
   },
   header: {
+    width: "100%",
+    height: 200,   
+    justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 30,
-    borderBottomWidth: 1,
-    borderBottomColor: "#EEEEEE",
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,  
+    opacity: 0.5, 
   },
   profileImageContainer: {
     position: "relative",
@@ -292,11 +305,14 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "bold",
     color: "#333333",
+   //backgroundColor:"beige",
+
     marginBottom: 5,
   },
   email: {
     fontSize: 16,
     color: "#666666",
+   //backgroundColor:"beige"
   },
   section: {
     backgroundColor: "#FFFFFF",
