@@ -6,6 +6,8 @@ import DrawerNavigator from "./DrawerNavigator";
 import LoginScreen from "../screens/LoginScreen";
 import SignupScreen from "../screens/SignupScreen";
 import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
+import VerificationScreen from "../screens/VerificationScreen";
+import ResetPasswordScreen from "../screens/ResetPasswordScreen";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 
 const Stack = createStackNavigator();
@@ -16,6 +18,8 @@ const AuthNavigator = () => (
     <Stack.Screen name="Login" component={LoginScreen} />
     <Stack.Screen name="Signup" component={SignupScreen} />
     <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+    <Stack.Screen name="Verification" component={VerificationScreen} />
+    <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
   </Stack.Navigator>
 );
 

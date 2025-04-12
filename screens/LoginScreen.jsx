@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -18,29 +17,69 @@ const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const { login, error, setError, isLoading } = useAuth();
 
+  // Clear previous errors when focused
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      setError(null);
+      setEmailError("");
+      setPasswordError("");
+    });
+
+    return unsubscribe;
+  }, [navigation, setError]);
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Please enter both email and password");
+    // Reset previous errors
+    setEmailError("");
+    setPasswordError("");
+    setError(null);
+
+    // Validate input
+    let hasError = false;
+
+    if (!email) {
+      setEmailError("Email is required");
+      hasError = true;
+    } else if (!validateEmail(email)) {
+      setEmailError("Please enter a valid email address");
+      hasError = true;
+    }
+
+    if (!password) {
+      setPasswordError("Password is required");
+      hasError = true;
+    }
+
+    if (hasError) {
       return;
     }
 
     const success = await login(email, password);
 
     if (!success && error) {
-      Alert.alert("Login Failed", error);
+      // Handle specific error messages from backend
+      if (error.includes("email") || error.includes("registered")) {
+        setEmailError(error);
+      } else if (error.includes("password") || error.includes("incorrect")) {
+        setPasswordError(error);
+      } else {
+        Alert.alert("Login Failed", error);
+      }
     }
   };
 
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
   };
-
-  // Clear any previous errors when navigating
-  React.useEffect(() => {
-    setError(null);
-  }, []);
 
   return (
     <KeyboardAvoidingView
@@ -60,7 +99,12 @@ const LoginScreen = ({ navigation }) => {
           </Text>
 
           <View style={styles.inputGroup}>
-            <View style={styles.inputContainer}>
+            <View
+              style={[
+                styles.inputContainer,
+                emailError ? styles.inputError : null,
+              ]}
+            >
               <Ionicons
                 name="mail-outline"
                 size={20}
@@ -71,13 +115,24 @@ const LoginScreen = ({ navigation }) => {
                 style={styles.input}
                 placeholder="Email"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  setEmailError("");
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
             </View>
+            {emailError ? (
+              <Text style={styles.errorText}>{emailError}</Text>
+            ) : null}
 
-            <View style={styles.inputContainer}>
+            <View
+              style={[
+                styles.inputContainer,
+                passwordError ? styles.inputError : null,
+              ]}
+            >
               <Ionicons
                 name="lock-closed-outline"
                 size={20}
@@ -88,7 +143,10 @@ const LoginScreen = ({ navigation }) => {
                 style={styles.input}
                 placeholder="Password"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setPasswordError("");
+                }}
                 secureTextEntry={!showPassword}
               />
               <TouchableOpacity
@@ -102,6 +160,9 @@ const LoginScreen = ({ navigation }) => {
                 />
               </TouchableOpacity>
             </View>
+            {passwordError ? (
+              <Text style={styles.errorText}>{passwordError}</Text>
+            ) : null}
 
             <TouchableOpacity
               onPress={() => navigation.navigate("ForgotPassword")}
@@ -173,10 +234,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E0E0E0",
     borderRadius: 8,
-    marginBottom: 15,
+    marginBottom: 10,
     paddingHorizontal: 10,
     height: 55,
     backgroundColor: "#F9F9F9",
+  },
+  inputError: {
+    borderColor: "#FF3B30",
+  },
+  errorText: {
+    color: "#FF3B30",
+    fontSize: 14,
+    marginBottom: 10,
+    marginLeft: 5,
   },
   inputIcon: {
     marginRight: 10,
@@ -193,6 +263,7 @@ const styles = StyleSheet.create({
   forgotPasswordContainer: {
     alignItems: "flex-end",
     marginBottom: 20,
+    marginTop: 5,
   },
   forgotPasswordText: {
     color: "#2E7D32",

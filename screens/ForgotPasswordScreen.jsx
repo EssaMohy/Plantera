@@ -19,10 +19,25 @@ const API_URL =
 const ForgotPasswordScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const handleResetPassword = async () => {
+    // Reset previous errors
+    setEmailError("");
+
+    // Validate email
     if (!email) {
-      Alert.alert("Error", "Please enter your email address");
+      setEmailError("Email is required");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setEmailError("Please enter a valid email address");
       return;
     }
 
@@ -31,21 +46,20 @@ const ForgotPasswordScreen = ({ navigation }) => {
     try {
       await axios.post(`${API_URL}/auth/forgotPassword`, { email });
 
-      // Show success message
-      Alert.alert(
-        "Success",
-        "If an account exists with this email, a password reset link will be sent.",
-        [{ text: "OK", onPress: () => navigation.navigate("Login") }]
-      );
-    } catch (error) {
-      // Still show success even if error, for security
-      Alert.alert(
-        "Success",
-        "If an account exists with this email, a password reset link will be sent.",
-        [{ text: "OK", onPress: () => navigation.navigate("Login") }]
-      );
-    } finally {
       setIsLoading(false);
+      // Navigate to verification screen
+      navigation.navigate("Verification", { email });
+    } catch (error) {
+      setIsLoading(false);
+
+      if (error.response && error.response.status === 404) {
+        // Only show this error if server specifically returns 404
+        setEmailError("No account found with this email");
+      } else {
+        // For security reasons, don't expose specific errors
+        // Still navigate to verification screen even if email doesn't exist
+        navigation.navigate("Verification", { email });
+      }
     }
   };
 
@@ -69,11 +83,16 @@ const ForgotPasswordScreen = ({ navigation }) => {
 
         <View style={styles.formContainer}>
           <Text style={styles.instructionText}>
-            Enter your email address and we'll send you a link to reset your
-            password.
+            Enter your email address and we'll send you a verification code to
+            reset your password.
           </Text>
 
-          <View style={styles.inputContainer}>
+          <View
+            style={[
+              styles.inputContainer,
+              emailError ? styles.inputError : null,
+            ]}
+          >
             <Ionicons
               name="mail-outline"
               size={20}
@@ -84,11 +103,18 @@ const ForgotPasswordScreen = ({ navigation }) => {
               style={styles.input}
               placeholder="Email"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                setEmailError("");
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
             />
           </View>
+
+          {emailError ? (
+            <Text style={styles.errorText}>{emailError}</Text>
+          ) : null}
 
           <TouchableOpacity
             style={styles.resetButton}
@@ -96,7 +122,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
             disabled={isLoading}
           >
             <Text style={styles.resetButtonText}>
-              {isLoading ? "Sending..." : "Send Reset Link"}
+              {isLoading ? "Sending..." : "Send Verification Code"}
             </Text>
           </TouchableOpacity>
 
@@ -148,10 +174,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E0E0E0",
     borderRadius: 8,
-    marginBottom: 25,
+    marginBottom: 10,
     paddingHorizontal: 10,
     height: 55,
     backgroundColor: "#F9F9F9",
+  },
+  inputError: {
+    borderColor: "#FF3B30",
+  },
+  errorText: {
+    color: "#FF3B30",
+    fontSize: 14,
+    marginBottom: 15,
+    marginLeft: 5,
   },
   inputIcon: {
     marginRight: 10,
@@ -169,6 +204,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 15,
+    marginTop: 15,
   },
   resetButtonText: {
     color: "#FFFFFF",
