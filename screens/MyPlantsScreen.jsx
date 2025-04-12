@@ -8,12 +8,15 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  ImageBackground,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import LottieView from "lottie-react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useMyPlants, useRemoveFromMyPlants } from "../hooks/myPlants";
 import { useAuth } from "../context/AuthContext";
+
+const backgroundImage = require("../assets/images/7.png");  
 
 const MyPlantsScreen = () => {
   const navigation = useNavigation();
@@ -22,22 +25,18 @@ const MyPlantsScreen = () => {
   const removeFromMyPlantsMutation = useRemoveFromMyPlants();
   const [removingPlantId, setRemovingPlantId] = useState(null);
 
-  // Handle navigation to the all plants screen
   const handleAddPlantsPress = () => {
     navigation.navigate("AllPlants");
   };
 
-  // Handle login navigation
   const handleLoginPress = () => {
     navigation.navigate("Login");
   };
 
-  // Navigate to plant details screen
   const handlePlantPress = (plant) => {
     navigation.navigate("SinglePlant", { plant });
   };
 
-  // Handle removing a plant
   const handleRemovePlant = (plant) => {
     Alert.alert(
       "Remove Plant",
@@ -67,9 +66,37 @@ const MyPlantsScreen = () => {
     );
   };
 
-  // Not logged in state
   if (!userToken) {
     return (
+      <ImageBackground source={backgroundImage} style={styles.background}>
+        <View style={styles.emptyContainer}>
+          <LottieView
+            source={require("../assets/plant.json")}
+            autoPlay
+            loop={false}
+            style={styles.animation}
+          />
+          <Text style={styles.title}>Welcome to Plant Area</Text>
+          <Text style={styles.subtitle}>
+            Log in to save your favorite plants and get personalized care
+            reminders!
+          </Text>
+          <TouchableOpacity style={styles.button} onPress={handleLoginPress}>
+            <Text style={styles.buttonText}>Login / Sign Up</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { marginTop: 16 }]}
+            onPress={handleAddPlantsPress}
+          >
+            <Text style={styles.secondaryButtonText}>Browse Plants</Text>
+          </TouchableOpacity>
+        </View>
+      </ImageBackground>
+    );
+  }
+
+  const renderEmptyState = () => (
+    <ImageBackground source={backgroundImage} style={styles.background}>
       <View style={styles.emptyContainer}>
         <LottieView
           source={require("../assets/plant.json")}
@@ -77,44 +104,17 @@ const MyPlantsScreen = () => {
           loop={false}
           style={styles.animation}
         />
-        <Text style={styles.title}>Welcome to Plant Area</Text>
+        <Text style={styles.title}>Let's get started</Text>
         <Text style={styles.subtitle}>
-          Log in to save your favorite plants and get personalized care
-          reminders!
+          Get professional plant care guidance to keep your plant alive!
         </Text>
-        <TouchableOpacity style={styles.button} onPress={handleLoginPress}>
-          <Text style={styles.buttonText}>Login / Sign Up</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.secondaryButton, { marginTop: 16 }]}
-          onPress={handleAddPlantsPress}
-        >
-          <Text style={styles.secondaryButtonText}>Browse Plants</Text>
+        <TouchableOpacity style={styles.button} onPress={handleAddPlantsPress}>
+          <Text style={styles.buttonText}>+ Add plants</Text>
         </TouchableOpacity>
       </View>
-    );
-  }
-
-  // Empty state - when user has no plants
-  const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <LottieView
-        source={require("../assets/plant.json")}
-        autoPlay
-        loop={false}
-        style={styles.animation}
-      />
-      <Text style={styles.title}>Let's get started</Text>
-      <Text style={styles.subtitle}>
-        Get professional plant care guidance to keep your plant alive!
-      </Text>
-      <TouchableOpacity style={styles.button} onPress={handleAddPlantsPress}>
-        <Text style={styles.buttonText}>+ Add plants</Text>
-      </TouchableOpacity>
-    </View>
+    </ImageBackground>
   );
 
-  // Plant card component with remove button
   const renderPlantItem = ({ item }) => (
     <View style={styles.plantCard}>
       <TouchableOpacity
@@ -142,7 +142,6 @@ const MyPlantsScreen = () => {
     </View>
   );
 
-  // Loading state
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
@@ -151,80 +150,87 @@ const MyPlantsScreen = () => {
     );
   }
 
-  // Error state - But keep UI usable
   if (isError) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>My Plants</Text>
-          <Text style={styles.welcomeText}>
-            Welcome, {userInfo?.firstName || "Plant Lover"}!
-          </Text>
-        </View>
+      <ImageBackground source={backgroundImage} style={styles.background}>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>My Plants</Text>
+            <Text style={styles.welcomeText}>
+              Welcome, {userInfo?.firstName || "Plant Lover"}!
+            </Text>
+          </View>
 
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>
-            Unable to load your plants:{" "}
-            {error?.response?.data?.message ||
-              error?.message ||
-              "Please try again later"}
-          </Text>
-          <TouchableOpacity
-            style={[styles.button, { marginTop: 20 }]}
-            onPress={handleAddPlantsPress}
-          >
-            <Text style={styles.buttonText}>Browse Plants</Text>
-          </TouchableOpacity>
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>
+              Unable to load your plants:{" "}
+              {error?.response?.data?.message ||
+                error?.message ||
+                "Please try again later"}
+            </Text>
+            <TouchableOpacity
+              style={[styles.button, { marginTop: 20 }]}
+              onPress={handleAddPlantsPress}
+            >
+              <Text style={styles.buttonText}>Browse Plants</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </ImageBackground>
     );
   }
 
-  // Show empty state if no plants
   if (!myPlants || myPlants.length === 0) {
     return renderEmptyState();
   }
 
-  // Show list of plants
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={myPlants}
-        renderItem={renderPlantItem}
-        keyExtractor={(item) => item._id}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
+    <ImageBackground source={backgroundImage} style={styles.background}>
+      <View style={styles.container}>
+        <FlatList
+          data={myPlants}
+          renderItem={renderPlantItem}
+          keyExtractor={(item) => item._id}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+        />
 
-      <TouchableOpacity
-        style={styles.floatingButton}
-        onPress={handleAddPlantsPress}
-      >
-        <Text style={styles.buttonText}>+ Add More Plants</Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity
+          style={styles.floatingButton}
+          onPress={handleAddPlantsPress}
+        >
+          <Text style={styles.buttonText}>+ Add More Plants</Text>
+        </TouchableOpacity>
+      </View>
+    </ImageBackground>
   );
 };
 
 export default MyPlantsScreen;
 
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+    resizeMode: "cover",
+    backgroundColor: "#FFFFFFAA",
+
+  },
   container: {
     flex: 1,
-    backgroundColor: "#F9F9F9",
+    backgroundColor: "transparent",
   },
   centerContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#FFFFFFAA",
     padding: 20,
   },
   emptyContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#FFFFFFAA",
     padding: 20,
   },
   errorContainer: {
