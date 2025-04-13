@@ -17,7 +17,7 @@ const API_URL =
   "https://labour-jewell-plant-area-6cb70f30.koyeb.app/plantarea/api";
 
 const ChangePasswordScreen = ({ navigation }) => {
-  const { userToken } = useAuth();
+  const { userToken, logout } = useAuth();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -28,14 +28,18 @@ const ChangePasswordScreen = ({ navigation }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChangePassword = async () => {
-    // Validate inputs
     if (!currentPassword || !newPassword || !confirmPassword) {
       setError("Please fill in all fields");
       return;
     }
 
+    if (newPassword.includes(" ")) {
+      setError("Password cannot contain spaces");
+      return;
+    }
+
     if (newPassword.length < 8) {
-      setError("New password must be at least 8 characters long");
+      setError("Password must be at least 8 characters");
       return;
     }
 
@@ -48,36 +52,41 @@ const ChangePasswordScreen = ({ navigation }) => {
       setIsLoading(true);
       setError(null);
 
-      // Make API request to change password
       await axios.post(
         `${API_URL}/auth/changePassword`,
-        {
-          currentPassword,
-          newPassword,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-        }
+        { currentPassword, newPassword },
+        { headers: { Authorization: `Bearer ${userToken}` } }
       );
 
       setIsLoading(false);
-      Alert.alert("Success", "Your password has been changed successfully", [
-        { text: "OK", onPress: () => navigation.goBack() },
-      ]);
+      Alert.alert(
+        "Success",
+        "Your password has been changed successfully. Please login again.",
+        [
+          {
+            text: "OK",
+            onPress: () => logout(),
+          },
+        ]
+      );
     } catch (error) {
       setIsLoading(false);
-      const errorMessage =
-        error.response?.data?.message || "Something went wrong";
-      setError(errorMessage);
+      setError(
+        error.response?.data?.message ||
+          "Failed to change password. Please try again."
+      );
     }
   };
 
   return (
     <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Change Password</Text>
+      </View>
+
       {error && (
         <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle" size={16} color="#D32F2F" />
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
@@ -128,7 +137,7 @@ const ChangePasswordScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
           <Text style={styles.helperText}>
-            Password must be at least 8 characters
+            Password must be at least 8 characters and cannot contain spaces
           </Text>
         </View>
 
@@ -159,13 +168,13 @@ const ChangePasswordScreen = ({ navigation }) => {
       <View style={styles.infoContainer}>
         <Ionicons name="information-circle-outline" size={20} color="#666666" />
         <Text style={styles.infoText}>
-          For security reasons, you'll need to re-login after changing your
+          For security reasons, you'll be logged out after changing your
           password
         </Text>
       </View>
 
       <TouchableOpacity
-        style={styles.changeButton}
+        style={[styles.changeButton, isLoading && styles.disabledButton]}
         onPress={handleChangePassword}
         disabled={isLoading}
       >
@@ -197,21 +206,22 @@ const styles = StyleSheet.create({
     color: "#333333",
   },
   errorContainer: {
-    backgroundColor: "#FFE8E6",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFEBEE",
     padding: 15,
     marginVertical: 10,
     marginHorizontal: 20,
-    borderRadius: 5,
-    borderLeftWidth: 5,
-    borderLeftColor: "#FF5252",
+    borderRadius: 6,
   },
   errorText: {
     color: "#D32F2F",
     fontSize: 14,
+    marginLeft: 8,
   },
   form: {
     backgroundColor: "#FFFFFF",
-    marginTop: 20,
+    marginTop: 10,
     paddingVertical: 20,
     paddingHorizontal: 20,
     borderTopWidth: 1,
@@ -228,12 +238,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   passwordInputContainer: {
-    position: "relative",
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#DDDDDD",
-    borderRadius: 5,
+    borderRadius: 8,
+    backgroundColor: "#F9F9F9",
   },
   passwordInput: {
     flex: 1,
@@ -248,6 +258,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#999999",
     marginTop: 5,
+    marginLeft: 5,
   },
   infoContainer: {
     flexDirection: "row",
@@ -256,7 +267,7 @@ const styles = StyleSheet.create({
     padding: 15,
     marginHorizontal: 20,
     marginTop: 20,
-    borderRadius: 5,
+    borderRadius: 8,
   },
   infoText: {
     flex: 1,
@@ -270,9 +281,12 @@ const styles = StyleSheet.create({
     marginTop: 30,
     marginBottom: 30,
     paddingVertical: 15,
-    borderRadius: 5,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
   changeButtonText: {
     color: "#FFFFFF",

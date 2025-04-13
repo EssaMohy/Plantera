@@ -16,7 +16,7 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { useMyPlants, useRemoveFromMyPlants } from "../hooks/myPlants";
 import { useAuth } from "../context/AuthContext";
 
-const backgroundImage = require("../assets/images/7.png");  
+const backgroundImage = require("../assets/images/7.png");
 
 const MyPlantsScreen = () => {
   const navigation = useNavigation();
@@ -145,7 +145,12 @@ const MyPlantsScreen = () => {
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#2E7D32" />
+        <LottieView
+          source={require("../assets/loading.json")}
+          autoPlay
+          loop={true}
+          style={styles.animation}
+        />
       </View>
     );
   }
@@ -154,13 +159,6 @@ const MyPlantsScreen = () => {
     return (
       <ImageBackground source={backgroundImage} style={styles.background}>
         <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>My Plants</Text>
-            <Text style={styles.welcomeText}>
-              Welcome, {userInfo?.firstName || "Plant Lover"}!
-            </Text>
-          </View>
-
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>
               Unable to load your plants:{" "}
@@ -213,7 +211,6 @@ const styles = StyleSheet.create({
     flex: 1,
     resizeMode: "cover",
     backgroundColor: "#FFFFFFAA",
-
   },
   container: {
     flex: 1,

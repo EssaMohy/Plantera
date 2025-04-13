@@ -22,14 +22,12 @@ const LoginScreen = ({ navigation }) => {
   const [passwordError, setPasswordError] = useState("");
   const { login, error, setError, isLoading } = useAuth();
 
-  // Clear previous errors when focused
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       setError(null);
       setEmailError("");
       setPasswordError("");
     });
-
     return unsubscribe;
   }, [navigation, setError]);
 
@@ -39,12 +37,10 @@ const LoginScreen = ({ navigation }) => {
   };
 
   const handleLogin = async () => {
-    // Reset previous errors
     setEmailError("");
     setPasswordError("");
     setError(null);
 
-    // Validate input
     let hasError = false;
 
     if (!email) {
@@ -58,16 +54,19 @@ const LoginScreen = ({ navigation }) => {
     if (!password) {
       setPasswordError("Password is required");
       hasError = true;
+    } else if (password.includes(" ")) {
+      setPasswordError("Password cannot contain spaces");
+      hasError = true;
+    } else if (password.length < 8) {
+      setPasswordError("Password must be at least 8 characters");
+      hasError = true;
     }
 
-    if (hasError) {
-      return;
-    }
+    if (hasError) return;
 
     const success = await login(email, password);
 
     if (!success && error) {
-      // Handle specific error messages from backend
       if (error.includes("email") || error.includes("registered")) {
         setEmailError(error);
       } else if (error.includes("password") || error.includes("incorrect")) {
@@ -83,146 +82,151 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-     <ImageBackground
+    <ImageBackground
       source={require("../assets/images/background.jpg")}
       style={styles.backgroundImage}
       resizeMode="cover"
     >
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-     // style={{ flex: 1 }}
-     style={styles.keyboardAvoidingView}
-    >
-      <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.logoContainer}>
-          <Ionicons name="leaf" size={60} color="#2E7D32" />
-          <Text style={styles.logoText}>Plantarea</Text>
-        </View>
-
-        <View style={styles.formContainer}>
-          <Text style={styles.welcomeText}>Welcome Back!</Text>
-          <Text style={styles.subtitleText}>
-            Login to access your plant care assistant
-          </Text>
-
-          <View style={styles.inputGroup}>
-            <View
-              style={[
-                styles.inputContainer,
-                emailError ? styles.inputError : null,
-              ]}
-            >
-              <Ionicons
-                name="mail-outline"
-                size={20}
-                color="#525252"
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Email"
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  setEmailError("");
-                }}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoidingView}
+      >
+        <ScrollView contentContainerStyle={styles.container}>
+          <View style={styles.content}>
+            <View style={styles.logoContainer}>
+              <Ionicons name="leaf" size={60} color="#2E7D32" />
+              <Text style={styles.logoText}>Plantarea</Text>
             </View>
-            {emailError ? (
-              <Text style={styles.errorText}>{emailError}</Text>
-            ) : null}
 
-            <View
-              style={[
-                styles.inputContainer,
-                passwordError ? styles.inputError : null,
-              ]}
-            >
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color="#525252"
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  setPasswordError("");
-                }}
-                secureTextEntry={!showPassword}
-              />
+            <View style={styles.formContainer}>
+              <Text style={styles.welcomeText}>Welcome Back!</Text>
+              <Text style={styles.subtitleText}>
+                Login to access your plant care assistant
+              </Text>
+
+              <View style={styles.inputGroup}>
+                <View
+                  style={[
+                    styles.inputContainer,
+                    emailError ? styles.inputError : null,
+                  ]}
+                >
+                  <Ionicons
+                    name="mail-outline"
+                    size={20}
+                    color="#525252"
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Email"
+                    value={email}
+                    onChangeText={(text) => {
+                      setEmail(text);
+                      setEmailError("");
+                    }}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+                {emailError && (
+                  <View style={styles.errorContainer}>
+                    <Ionicons name="alert-circle" size={16} color="#D32F2F" />
+                    <Text style={styles.errorText}>{emailError}</Text>
+                  </View>
+                )}
+
+                <View
+                  style={[
+                    styles.inputContainer,
+                    passwordError ? styles.inputError : null,
+                  ]}
+                >
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={20}
+                    color="#525252"
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Password"
+                    value={password}
+                    onChangeText={(text) => {
+                      setPassword(text);
+                      setPasswordError("");
+                    }}
+                    secureTextEntry={!showPassword}
+                  />
+                  <TouchableOpacity
+                    onPress={toggleShowPassword}
+                    style={styles.eyeIcon}
+                  >
+                    <Ionicons
+                      name={showPassword ? "eye-off-outline" : "eye-outline"}
+                      size={20}
+                      color="#525252"
+                    />
+                  </TouchableOpacity>
+                </View>
+                {passwordError && (
+                  <View style={styles.errorContainer}>
+                    <Ionicons name="alert-circle" size={16} color="#D32F2F" />
+                    <Text style={styles.errorText}>{passwordError}</Text>
+                  </View>
+                )}
+
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("ForgotPassword")}
+                  style={styles.forgotPasswordContainer}
+                >
+                  <Text style={styles.forgotPasswordText}>
+                    Forgot Password?
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
               <TouchableOpacity
-                onPress={toggleShowPassword}
-                style={styles.eyeIcon}
+                style={[styles.loginButton, isLoading && styles.disabledButton]}
+                onPress={handleLogin}
+                disabled={isLoading}
               >
-                <Ionicons
-                  name={showPassword ? "eye-off-outline" : "eye-outline"}
-                  size={20}
-                  color="#525252"
-                />
+                <Text style={styles.loginButtonText}>
+                  {isLoading ? "Logging in..." : "Login"}
+                </Text>
               </TouchableOpacity>
+
+              <View style={styles.signupContainer}>
+                <Text style={styles.signupText}>Don't have an account? </Text>
+                <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
+                  <Text style={styles.signupLink}>Sign Up</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            {passwordError ? (
-              <Text style={styles.errorText}>{passwordError}</Text>
-            ) : null}
-
-            <TouchableOpacity
-              onPress={() => navigation.navigate("ForgotPassword")}
-              style={styles.forgotPasswordContainer}
-            >
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-            </TouchableOpacity>
           </View>
-
-          <TouchableOpacity
-            style={styles.loginButton}
-            onPress={handleLogin}
-            disabled={isLoading}
-          >
-            <Text style={styles.loginButtonText}>
-              {isLoading ? "Logging in..." : "Login"}
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
-              <Text style={styles.signupLink}>Sign Up</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
-   </ImageBackground>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   keyboardAvoidingView: {
     flex: 1,
   },
   container: {
-   // justifyContent: "center",
-      flexGrow: 1,
-   
+    flexGrow: 1,
   },
   content: {
     flex: 1,
     padding: 20,
-    minHeight: '100%',
-    justifyContent: 'center',
+    minHeight: "100%",
+    justifyContent: "center",
   },
   logoContainer: {
     alignItems: "center",
@@ -236,10 +240,10 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     width: "100%",
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 10,
     padding: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
@@ -273,11 +277,18 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: "#FF3B30",
   },
-  errorText: {
-    color: "#FF3B30",
-    fontSize: 14,
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFEBEE",
+    padding: 8,
+    borderRadius: 6,
     marginBottom: 10,
-    marginLeft: 5,
+  },
+  errorText: {
+    color: "#D32F2F",
+    fontSize: 14,
+    marginLeft: 8,
   },
   inputIcon: {
     marginRight: 10,
@@ -307,6 +318,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
   loginButtonText: {
     color: "#FFFFFF",

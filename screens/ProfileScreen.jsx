@@ -7,7 +7,7 @@ import {
   ScrollView,
   Image,
   Alert,
-  ImageBackground
+  ImageBackground,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
@@ -41,14 +41,11 @@ const ProfileScreen = ({ navigation }) => {
   return (
     <ScrollView style={styles.container}>
       <ImageBackground
-  source={require("../assets/images/6.png")}
-  style={styles.header}
-  resizeMode="cover"
->
-  <View style={[styles.overlay, { backgroundColor: "white" }]}>
-    
-  </View>
-
+        source={require("../assets/images/6.png")}
+        style={styles.header}
+        resizeMode="cover"
+      >
+        <View style={[styles.overlay, { backgroundColor: "white" }]}></View>
 
         <View style={styles.profileImageContainer}>
           <View style={styles.profileImage}>
@@ -66,8 +63,8 @@ const ProfileScreen = ({ navigation }) => {
           {userInfo?.firstName} {userInfo?.lastName}
         </Text>
         <Text style={styles.email}>{userInfo?.email}</Text>
-     </ImageBackground>
-     {/*  </View> */}
+      </ImageBackground>
+      {/*  </View> */}
 
       {/* Account Settings */}
       <View style={styles.section}>
@@ -75,9 +72,7 @@ const ProfileScreen = ({ navigation }) => {
 
         <TouchableOpacity
           style={styles.option}
-          onPress={() =>
-            navigation.navigate("MainStack", { screen: "EditProfile" })
-          }
+          onPress={() => navigation.navigate("EditProfile")}
           testID="edit-profile-button"
         >
           <Ionicons
@@ -92,9 +87,7 @@ const ProfileScreen = ({ navigation }) => {
 
         <TouchableOpacity
           style={styles.option}
-          onPress={() =>
-            navigation.navigate("MainStack", { screen: "ChangePassword" })
-          }
+          onPress={() => navigation.navigate("ChangePassword")}
           testID="change-password-button"
         >
           <Ionicons
@@ -263,13 +256,13 @@ const styles = StyleSheet.create({
   },
   header: {
     width: "100%",
-    height: 200,   
+    height: 200,
     justifyContent: "center",
     alignItems: "center",
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,  
-    opacity: 0.5, 
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.5,
   },
   profileImageContainer: {
     position: "relative",
@@ -305,14 +298,14 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "bold",
     color: "#333333",
-   //backgroundColor:"beige",
+    //backgroundColor:"beige",
 
     marginBottom: 5,
   },
   email: {
     fontSize: 16,
     color: "#666666",
-   //backgroundColor:"beige"
+    //backgroundColor:"beige"
   },
   section: {
     backgroundColor: "#FFFFFF",

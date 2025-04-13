@@ -20,25 +20,39 @@ const SignupScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const { register, error, setError, isLoading } = useAuth();
+  const [error, setLocalError] = useState(null);
+  const { register, error: authError, setError, isLoading } = useAuth();
+
+  const validatePassword = (password) => {
+    return !password.includes(" ");
+  };
 
   const handleSignup = async () => {
+    // Reset errors
+    setLocalError(null);
+    setError(null);
+
     // Basic validation
     if (!firstName || !lastName || !email || !password) {
-      Alert.alert("Error", "Please fill all fields");
+      setLocalError("Please fill in all fields");
       return;
     }
 
     if (password.length < 8) {
-      Alert.alert("Error", "Password must be at least 8 characters");
+      setLocalError("Password must be at least 8 characters long");
+      return;
+    }
+
+    if (!validatePassword(password)) {
+      setLocalError("Password cannot contain spaces");
       return;
     }
 
     // Try to register user
     const success = await register(firstName, lastName, email, password);
 
-    if (!success && error) {
-      Alert.alert("Registration Failed", error);
+    if (!success && authError) {
+      setLocalError(authError);
     }
   };
 
@@ -49,122 +63,135 @@ const SignupScreen = ({ navigation }) => {
   // Clear any previous errors when navigating
   React.useEffect(() => {
     setError(null);
+    setLocalError(null);
   }, []);
 
   return (
     <ImageBackground
-    source={require("../assets/images/background.jpg")}
-    style={styles.backgroundImage}
-    resizeMode="cover"
-  >
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.keyboardAvoidingView}
+      source={require("../assets/images/background.jpg")}
+      style={styles.backgroundImage}
+      resizeMode="cover"
     >
-      <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.logoContainer}>
-          <Ionicons name="leaf" size={60} color="#2E7D32" />
-          <Text style={styles.logoText}>Plantarea</Text>
-        </View>
-
-        <View style={styles.formContainer}>
-          <Text style={styles.welcomeText}>Create Account</Text>
-          <Text style={styles.subtitleText}>Join our plant care community</Text>
-
-          <View style={styles.inputGroup}>
-            <View style={styles.row}>
-              <View style={[styles.inputContainer, styles.halfWidth]}>
-                <Ionicons
-                  name="person-outline"
-                  size={20}
-                  color="#525252"
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="First Name"
-                  value={firstName}
-                  onChangeText={setFirstName}
-                  autoCapitalize="words"
-                />
-              </View>
-
-              <View style={[styles.inputContainer, styles.halfWidth]}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Last Name"
-                  value={lastName}
-                  onChangeText={setLastName}
-                  autoCapitalize="words"
-                />
-              </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoidingView}
+      >
+        <ScrollView contentContainerStyle={styles.container}>
+          <View style={styles.content}>
+            <View style={styles.logoContainer}>
+              <Ionicons name="leaf" size={60} color="#2E7D32" />
+              <Text style={styles.logoText}>Plantarea</Text>
             </View>
 
-            <View style={styles.inputContainer}>
-              <Ionicons
-                name="mail-outline"
-                size={20}
-                color="#525252"
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
+            <View style={styles.formContainer}>
+              <Text style={styles.welcomeText}>Create Account</Text>
+              <Text style={styles.subtitleText}>
+                Join our plant care community
+              </Text>
 
-            <View style={styles.inputContainer}>
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color="#525252"
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-              />
+              {error && (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorContainerText}>{error}</Text>
+                </View>
+              )}
+
+              <View style={styles.inputGroup}>
+                <View style={styles.row}>
+                  <View style={[styles.inputContainer, styles.halfWidth]}>
+                    <Ionicons
+                      name="person-outline"
+                      size={20}
+                      color="#525252"
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="First Name"
+                      value={firstName}
+                      onChangeText={setFirstName}
+                      autoCapitalize="words"
+                    />
+                  </View>
+
+                  <View style={[styles.inputContainer, styles.halfWidth]}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Last Name"
+                      value={lastName}
+                      onChangeText={setLastName}
+                      autoCapitalize="words"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Ionicons
+                    name="mail-outline"
+                    size={20}
+                    color="#525252"
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Email"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={20}
+                    color="#525252"
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Password"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                  />
+                  <TouchableOpacity
+                    onPress={toggleShowPassword}
+                    style={styles.eyeIcon}
+                  >
+                    <Ionicons
+                      name={showPassword ? "eye-off-outline" : "eye-outline"}
+                      size={20}
+                      color="#525252"
+                    />
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.helperText}>
+                  Password must be at least 8 characters and cannot contain
+                  spaces
+                </Text>
+              </View>
+
               <TouchableOpacity
-                onPress={toggleShowPassword}
-                style={styles.eyeIcon}
+                style={styles.signupButton}
+                onPress={handleSignup}
+                disabled={isLoading}
               >
-                <Ionicons
-                  name={showPassword ? "eye-off-outline" : "eye-outline"}
-                  size={20}
-                  color="#525252"
-                />
+                <Text style={styles.signupButtonText}>
+                  {isLoading ? "Creating Account..." : "Sign Up"}
+                </Text>
               </TouchableOpacity>
+
+              <View style={styles.loginContainer}>
+                <Text style={styles.loginText}>Already have an account? </Text>
+                <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+                  <Text style={styles.loginLink}>Login</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-
-          <TouchableOpacity
-            style={styles.signupButton}
-            onPress={handleSignup}
-            disabled={isLoading}
-          >
-            <Text style={styles.signupButtonText}>
-              {isLoading ? "Creating Account..." : "Sign Up"}
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.loginContainer}>
-            <Text style={styles.loginText}>Already have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-              <Text style={styles.loginLink}>Login</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </ImageBackground>
   );
 };
@@ -172,23 +199,20 @@ const SignupScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   keyboardAvoidingView: {
     flex: 1,
   },
   container: {
-        flexGrow: 1,
-    //backgroundColor: "#FFFFFF",
-   
+    flexGrow: 1,
   },
   content: {
     flex: 1,
     padding: 20,
-    minHeight: '100%',
-    justifyContent: 'center',
-   // backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    minHeight: "100%",
+    justifyContent: "center",
   },
   logoContainer: {
     alignItems: "center",
@@ -202,14 +226,26 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     width: "100%",
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 10,
     padding: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 3,
+  },
+  errorContainer: {
+    backgroundColor: "#FFE8E6",
+    padding: 15,
+    marginVertical: 10,
+    borderRadius: 5,
+    borderLeftWidth: 5,
+    borderLeftColor: "#FF5252",
+  },
+  errorContainerText: {
+    color: "#D32F2F",
+    fontSize: 14,
   },
   welcomeText: {
     fontSize: 24,
@@ -255,6 +291,12 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     padding: 10,
+  },
+  helperText: {
+    fontSize: 12,
+    color: "#999999",
+    marginTop: -10,
+    marginBottom: 15,
   },
   signupButton: {
     backgroundColor: "#2E7D32",

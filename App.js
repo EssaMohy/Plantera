@@ -17,6 +17,7 @@ export default function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <StatusBar style="dark" />
       <Main />
     </QueryClientProvider>
   );

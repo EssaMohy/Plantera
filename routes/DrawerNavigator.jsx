@@ -17,6 +17,7 @@ import StackNavigator from "./StackNavigator";
 import ProfileScreen from "../screens/ProfileScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 import { useAuth } from "../context/AuthContext";
+import ProfileStack from "./ProfileStack";
 
 const Drawer = createDrawerNavigator();
 
@@ -162,7 +163,11 @@ const DrawerNavigator = () => {
         component={StackNavigator}
         options={{ title: "Home", headerShown: false }}
       />
-      <Drawer.Screen name="Profile" component={ProfileScreen} />
+      <Drawer.Screen
+        name="Profile"
+        component={ProfileStack}
+        options={{ headerShown: false }}
+      />
       <Drawer.Screen name="Notifications" component={NotificationsScreen} />
     </Drawer.Navigator>
   );

@@ -23,6 +23,7 @@ const ResetPasswordScreen = ({ navigation, route }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
@@ -32,20 +33,32 @@ const ResetPasswordScreen = ({ navigation, route }) => {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
+  const validatePassword = (password) => {
+    return !password.includes(" ");
+  };
+
   const handleResetPassword = async () => {
+    // Clear previous error
+    setError(null);
+
     // Validate passwords
     if (!password || !confirmPassword) {
-      Alert.alert("Error", "Please enter both password fields");
+      setError("Please enter both password fields");
       return;
     }
 
     if (password.length < 8) {
-      Alert.alert("Error", "Password must be at least 8 characters");
+      setError("Password must be at least 8 characters");
+      return;
+    }
+
+    if (!validatePassword(password)) {
+      setError("Password cannot contain spaces");
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match");
+      setError("Passwords do not match");
       return;
     }
 
@@ -68,12 +81,9 @@ const ResetPasswordScreen = ({ navigation, route }) => {
 
       // Handle specific error messages
       if (error.response) {
-        Alert.alert(
-          "Error",
-          error.response.data.message || "Failed to reset password"
-        );
+        setError(error.response.data.message || "Failed to reset password");
       } else {
-        Alert.alert("Error", "Network error. Please check your connection.");
+        setError("Network error. Please check your connection.");
       }
     }
   };
@@ -95,6 +105,12 @@ const ResetPasswordScreen = ({ navigation, route }) => {
           <Ionicons name="lock-closed-outline" size={60} color="#2E7D32" />
           <Text style={styles.logoText}>New Password</Text>
         </View>
+
+        {error && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
 
         <View style={styles.formContainer}>
           <Text style={styles.instructionText}>
@@ -126,6 +142,9 @@ const ResetPasswordScreen = ({ navigation, route }) => {
               />
             </TouchableOpacity>
           </View>
+          <Text style={styles.helperText}>
+            Password must be at least 8 characters and cannot contain spaces
+          </Text>
 
           <View style={styles.inputContainer}>
             <Ionicons
@@ -188,6 +207,18 @@ const styles = StyleSheet.create({
     color: "#2E7D32",
     marginTop: 10,
   },
+  errorContainer: {
+    backgroundColor: "#FFE8E6",
+    padding: 15,
+    marginVertical: 10,
+    borderRadius: 5,
+    borderLeftWidth: 5,
+    borderLeftColor: "#FF5252",
+  },
+  errorText: {
+    color: "#D32F2F",
+    fontSize: 14,
+  },
   formContainer: {
     width: "100%",
   },
@@ -204,7 +235,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E0E0E0",
     borderRadius: 8,
-    marginBottom: 20,
+    marginBottom: 15,
     paddingHorizontal: 10,
     height: 55,
     backgroundColor: "#F9F9F9",
@@ -220,6 +251,12 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     padding: 10,
+  },
+  helperText: {
+    fontSize: 12,
+    color: "#999999",
+    marginTop: -10,
+    marginBottom: 20,
   },
   resetButton: {
     backgroundColor: "#2E7D32",
