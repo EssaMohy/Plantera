@@ -12,6 +12,7 @@ import { useNavigation } from "@react-navigation/native";
 import ProfileScreen from "../screens/ProfileScreen";
 import EditProfileScreen from "../screens/EditProfileScreen";
 import ChangePasswordScreen from "../screens/ChangePasswordScreen";
+import { useAuth } from "../context/AuthContext";
 
 const Stack = createStackNavigator();
 
@@ -49,7 +50,7 @@ const ProfileStack = () => {
   return (
     <Stack.Navigator>
       <Stack.Screen
-        name="Profile"
+        name="My Profile"
         component={ProfileScreen}
         options={({ route }) => ({
           tabBarActiveTintColor: "#2E7D32",
