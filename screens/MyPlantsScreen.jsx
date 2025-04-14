@@ -115,32 +115,37 @@ const MyPlantsScreen = () => {
     </ImageBackground>
   );
 
-  const renderPlantItem = ({ item }) => (
-    <View style={styles.plantCard}>
-      <TouchableOpacity
-        style={styles.plantContent}
-        onPress={() => handlePlantPress(item)}
-      >
-        <Image source={{ uri: item.image }} style={styles.plantImage} />
-        <View style={styles.plantInfo}>
-          <Text style={styles.plantName}>{item.commonName}</Text>
-          <Text style={styles.plantScientific}>{item.scientificName}</Text>
-        </View>
-      </TouchableOpacity>
+  const renderPlantItem = ({ item }) => {
+    // Handle both nested and flat plant data structure
+    const plant = item.plant || item;
 
-      <TouchableOpacity
-        style={styles.removeButton}
-        onPress={() => handleRemovePlant(item)}
-        disabled={removingPlantId === item._id}
-      >
-        {removingPlantId === item._id ? (
-          <ActivityIndicator size="small" color="#D32F2F" />
-        ) : (
-          <Icon name="trash-outline" size={22} color="#D32F2F" />
-        )}
-      </TouchableOpacity>
-    </View>
-  );
+    return (
+      <View style={styles.plantCard}>
+        <TouchableOpacity
+          style={styles.plantContent}
+          onPress={() => handlePlantPress(plant)}
+        >
+          <Image source={{ uri: plant.image }} style={styles.plantImage} />
+          <View style={styles.plantInfo}>
+            <Text style={styles.plantName}>{plant.commonName}</Text>
+            <Text style={styles.plantScientific}>{plant.scientificName}</Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.removeButton}
+          onPress={() => handleRemovePlant(plant)}
+          disabled={removingPlantId === plant._id}
+        >
+          {removingPlantId === plant._id ? (
+            <ActivityIndicator size="small" color="#D32F2F" />
+          ) : (
+            <Icon name="trash-outline" size={22} color="#D32F2F" />
+          )}
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -188,7 +193,7 @@ const MyPlantsScreen = () => {
         <FlatList
           data={myPlants}
           renderItem={renderPlantItem}
-          keyExtractor={(item) => item._id}
+          keyExtractor={(item) => (item.plant ? item.plant._id : item._id)}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
         />
