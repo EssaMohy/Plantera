@@ -4,8 +4,10 @@ import DiseaseCard from "../components/DiseaseCard";
 import SearchBar from "../components/SearchBar";
 import { useDiseases } from "../hooks/diseases";
 import LottieView from "lottie-react-native";
+import { useNavigation } from "@react-navigation/native";
 
 const DiagnoseScreen = () => {
+  const navigation = useNavigation();
   const { data: diseases, isLoading, isError, error } = useDiseases();
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -43,11 +45,15 @@ const DiagnoseScreen = () => {
     return nameMatch || otherNamesMatch;
   });
 
+  const handleDiseasePress = (disease) => {
+    navigation.navigate("SingleDisease", { disease });
+  };
+
   const renderDisease = ({ item }) => (
     <DiseaseCard
       image={item.image}
       name={item.name}
-      onPress={() => console.log("pressed", item._id)}
+      onPress={() => handleDiseasePress(item)}
     />
   );
 
@@ -61,7 +67,7 @@ const DiagnoseScreen = () => {
         />
       </View>
 
-      {/* Plant List */}
+      {/* Disease List */}
       <FlatList
         data={filteredDiseases}
         keyExtractor={(disease) => disease._id}

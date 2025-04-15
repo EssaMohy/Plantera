@@ -12,6 +12,7 @@ import { useNavigation } from "@react-navigation/native";
 import ProfileScreen from "../screens/ProfileScreen";
 import EditProfileScreen from "../screens/EditProfileScreen";
 import ChangePasswordScreen from "../screens/ChangePasswordScreen";
+import NotificationsSettingsScreen from "../screens/NotificatinsSettingsScreen";
 import { useAuth } from "../context/AuthContext";
 
 const Stack = createStackNavigator();
@@ -106,6 +107,24 @@ const ProfileStack = () => {
         component={ChangePasswordScreen}
         options={{
           title: "Change Password",
+          headerTintColor: "#2E7D32",
+          headerTitleStyle: {
+            fontWeight: "bold",
+            color: "#2E7D32",
+          },
+          headerTitleAlign: "center",
+          headerStyle: {
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0,
+          },
+        }}
+      />
+
+      <Stack.Screen
+        name="Notifications Settings"
+        component={NotificationsSettingsScreen}
+        options={{
           headerTintColor: "#2E7D32",
           headerTitleStyle: {
             fontWeight: "bold",

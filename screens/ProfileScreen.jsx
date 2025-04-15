@@ -102,12 +102,7 @@ const ProfileScreen = ({ navigation }) => {
 
         <TouchableOpacity
           style={styles.option}
-          onPress={() => {
-            Alert.alert(
-              "Coming Soon",
-              "Notification settings will be available in a future update."
-            );
-          }}
+          onPress={() => navigation.navigate("Notifications Settings")}
         >
           <Ionicons
             name="notifications-outline"

@@ -200,6 +200,120 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Save push token function
+  const savePushToken = async (token, deviceId) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await axios.post(
+        `${API_URL}/user/push-token`,
+        { token, deviceId },
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
+
+      // Update user info in state and storage
+      const updatedUser = response.data.data.user;
+      setUserInfo(updatedUser);
+      await AsyncStorage.setItem("userInfo", JSON.stringify(updatedUser));
+
+      setIsLoading(false);
+      return { success: true };
+    } catch (error) {
+      setIsLoading(false);
+
+      if (error.response) {
+        setError(error.response.data.message || "Failed to save push token");
+      } else {
+        setError("Network error. Please check your connection.");
+      }
+
+      return {
+        success: false,
+        error: error.response?.data?.message || "Failed to save push token",
+      };
+    }
+  };
+
+  // Remove push token function
+  const removePushToken = async (token) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await axios.delete(`${API_URL}/user/push-token`, {
+        data: { token },
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        },
+      });
+
+      // Update user info in state and storage
+      const updatedUser = response.data.data.user;
+      setUserInfo(updatedUser);
+      await AsyncStorage.setItem("userInfo", JSON.stringify(updatedUser));
+
+      setIsLoading(false);
+      return { success: true };
+    } catch (error) {
+      setIsLoading(false);
+
+      if (error.response) {
+        setError(error.response.data.message || "Failed to remove push token");
+      } else {
+        setError("Network error. Please check your connection.");
+      }
+
+      return {
+        success: false,
+        error: error.response?.data?.message || "Failed to remove push token",
+      };
+    }
+  };
+
+  // Update notification preferences function
+  const updateNotificationPreferences = async (preferences) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await axios.patch(
+        `${API_URL}/user/notification-preferences`,
+        preferences,
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
+
+      // Update user info in state and storage
+      const updatedUser = response.data.data.user;
+      setUserInfo(updatedUser);
+      await AsyncStorage.setItem("userInfo", JSON.stringify(updatedUser));
+
+      setIsLoading(false);
+      return { success: true };
+    } catch (error) {
+      setIsLoading(false);
+
+      if (error.response) {
+        setError(error.response.data.message || "Failed to update preferences");
+      } else {
+        setError("Network error. Please check your connection.");
+      }
+
+      return {
+        success: false,
+        error: error.response?.data?.message || "Failed to update preferences",
+      };
+    }
+  };
+
   // Logout function
   const logout = async () => {
     setIsLoading(true);
@@ -254,6 +368,9 @@ export const AuthProvider = ({ children }) => {
         register,
         updateProfile,
         changePassword,
+        savePushToken,
+        removePushToken,
+        updateNotificationPreferences,
         isLoading,
         userToken,
         userInfo,

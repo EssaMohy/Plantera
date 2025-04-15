@@ -4,6 +4,7 @@ import TabNavigator from "./TabNavigator";
 import SplashScreen from "../screens/SplashScreen";
 import AllPlants from "../screens/AllPlants";
 import SinglePlantScreen from "../screens/SinglePlantScreen";
+import SingleDiseaseScreen from "../screens/SingleDiseaseScreen";
 import CategoryScreen from "../screens/CategoryScreen";
 import HomeScreen from "../screens/HomeScreen";
 import ArticleDetailsScreen from "../screens/ArticleDetailsScreen";
@@ -45,6 +46,11 @@ const StackNavigator = () => {
       <Stack.Screen
         name="SinglePlant"
         component={SinglePlantScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SingleDisease"
+        component={SingleDiseaseScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
