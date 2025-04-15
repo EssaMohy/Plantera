@@ -2,10 +2,8 @@ import React, { createContext, useState, useEffect, useContext } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-// Create context
 export const AuthContext = createContext();
 
-// Base URL for API requests
 const API_URL =
   "https://labour-jewell-plant-area-6cb70f30.koyeb.app/plantarea/api";
 
@@ -15,23 +13,26 @@ export const AuthProvider = ({ children }) => {
   const [userInfo, setUserInfo] = useState(null);
   const [error, setError] = useState(null);
 
-  // Function to store the JWT token and user info
+  // Store user data in AsyncStorage
   const storeUserData = async (token, userData) => {
     try {
-      await AsyncStorage.setItem("userToken", token);
-      await AsyncStorage.setItem("userInfo", JSON.stringify(userData));
+      await AsyncStorage.multiSet([
+        ["userToken", token],
+        ["userInfo", JSON.stringify(userData)],
+      ]);
     } catch (error) {
-      console.log("Error storing user data:", error);
+      console.error("Error storing user data:", error);
+      throw new Error("Failed to save user data");
     }
   };
 
-  // Function to remove the JWT token and user info
+  // Remove user data from AsyncStorage
   const removeUserData = async () => {
     try {
-      await AsyncStorage.removeItem("userToken");
-      await AsyncStorage.removeItem("userInfo");
+      await AsyncStorage.multiRemove(["userToken", "userInfo"]);
     } catch (error) {
-      console.log("Error removing user data:", error);
+      console.error("Error removing user data:", error);
+      throw new Error("Failed to clear user data");
     }
   };
 
@@ -48,27 +49,24 @@ export const AuthProvider = ({ children }) => {
 
       const { token, data } = response.data;
 
-      // Store token and user data
+      // Update state and storage
       setUserToken(token);
       setUserInfo(data.user);
-      storeUserData(token, data.user);
+      await storeUserData(token, data.user);
 
-      // Configure axios to use token for future requests
+      // Set default axios headers
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-      setIsLoading(false);
-      return true;
+      return { success: true, user: data.user };
     } catch (error) {
-      setIsLoading(false);
-
-      // Handle specific error messages
+      let errorMsg = "Network error. Please check your connection.";
       if (error.response) {
-        setError(error.response.data.message || "Login failed");
-      } else {
-        setError("Network error. Please check your connection.");
+        errorMsg = error.response.data.message || "Login failed";
       }
-
-      return false;
+      setError(errorMsg);
+      return { success: false, error: errorMsg };
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -87,27 +85,24 @@ export const AuthProvider = ({ children }) => {
 
       const { token, data } = response.data;
 
-      // Store token and user data
+      // Update state and storage
       setUserToken(token);
       setUserInfo(data.user);
-      storeUserData(token, data.user);
+      await storeUserData(token, data.user);
 
-      // Configure axios to use token for future requests
+      // Set default axios headers
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-      setIsLoading(false);
-      return true;
+      return { success: true, user: data.user };
     } catch (error) {
-      setIsLoading(false);
-
-      // Handle specific error messages
+      let errorMsg = "Network error. Please check your connection.";
       if (error.response) {
-        setError(error.response.data.message || "Registration failed");
-      } else {
-        setError("Network error. Please check your connection.");
+        errorMsg = error.response.data.message || "Registration failed";
       }
-
-      return false;
+      setError(errorMsg);
+      return { success: false, error: errorMsg };
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -120,35 +115,25 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.patch(
         `${API_URL}/auth/updateMe`,
         updateData,
-        {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${userToken}` } }
       );
 
       const updatedUser = response.data.data.user;
 
-      // Update user info in state and storage
+      // Update state and storage
       setUserInfo(updatedUser);
       await AsyncStorage.setItem("userInfo", JSON.stringify(updatedUser));
 
-      setIsLoading(false);
       return { success: true, user: updatedUser };
     } catch (error) {
-      setIsLoading(false);
-
-      // Handle specific error messages
+      let errorMsg = "Network error. Please check your connection.";
       if (error.response) {
-        setError(error.response.data.message || "Profile update failed");
-      } else {
-        setError("Network error. Please check your connection.");
+        errorMsg = error.response.data.message || "Profile update failed";
       }
-
-      return {
-        success: false,
-        error: error.response?.data?.message || "Update failed",
-      };
+      setError(errorMsg);
+      return { success: false, error: errorMsg };
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -160,202 +145,167 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axios.post(
         `${API_URL}/auth/changePassword`,
-        {
-          currentPassword,
-          newPassword,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-        }
+        { currentPassword, newPassword },
+        { headers: { Authorization: `Bearer ${userToken}` } }
       );
 
       const { token, data } = response.data;
 
-      // Update token and user info
+      // Update state and storage
       setUserToken(token);
       setUserInfo(data.user);
-      storeUserData(token, data.user);
+      await storeUserData(token, data.user);
 
-      // Update axios headers with new token
+      // Update axios headers
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-      setIsLoading(false);
       return { success: true };
     } catch (error) {
-      setIsLoading(false);
-
-      // Handle specific error messages
+      let errorMsg = "Network error. Please check your connection.";
       if (error.response) {
-        setError(error.response.data.message || "Password change failed");
-      } else {
-        setError("Network error. Please check your connection.");
+        errorMsg = error.response.data.message || "Password change failed";
       }
-
-      return {
-        success: false,
-        error: error.response?.data?.message || "Password change failed",
-      };
+      setError(errorMsg);
+      return { success: false, error: errorMsg };
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Save push token function
-  const savePushToken = async (token, deviceId) => {
-    setIsLoading(true);
-    setError(null);
-
+  const getNotificationPreferences = async () => {
     try {
-      const response = await axios.post(
-        `${API_URL}/user/push-token`,
-        { token, deviceId },
+      const response = await axios.get(
+        `${API_URL}/users/notification-preferences`,
         {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
+          headers: { Authorization: `Bearer ${userToken}` },
         }
       );
 
-      // Update user info in state and storage
-      const updatedUser = response.data.data.user;
-      setUserInfo(updatedUser);
-      await AsyncStorage.setItem("userInfo", JSON.stringify(updatedUser));
-
-      setIsLoading(false);
-      return { success: true };
-    } catch (error) {
-      setIsLoading(false);
-
-      if (error.response) {
-        setError(error.response.data.message || "Failed to save push token");
-      } else {
-        setError("Network error. Please check your connection.");
-      }
-
+      // Ensure consistent response structure
       return {
-        success: false,
-        error: error.response?.data?.message || "Failed to save push token",
-      };
-    }
-  };
-
-  // Remove push token function
-  const removePushToken = async (token) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await axios.delete(`${API_URL}/user/push-token`, {
-        data: { token },
-        headers: {
-          Authorization: `Bearer ${userToken}`,
+        success: true,
+        preferences: response.data.data?.preferences || {
+          pushEnabled: false,
+          wateringReminders: false,
+          fertilizingReminders: false,
+          emailNotifications: false,
         },
-      });
-
-      // Update user info in state and storage
-      const updatedUser = response.data.data.user;
-      setUserInfo(updatedUser);
-      await AsyncStorage.setItem("userInfo", JSON.stringify(updatedUser));
-
-      setIsLoading(false);
-      return { success: true };
+      };
     } catch (error) {
-      setIsLoading(false);
-
-      if (error.response) {
-        setError(error.response.data.message || "Failed to remove push token");
-      } else {
-        setError("Network error. Please check your connection.");
-      }
-
+      console.error("Get preferences error:", error);
       return {
         success: false,
-        error: error.response?.data?.message || "Failed to remove push token",
+        error: error.response?.data?.message || "Failed to get preferences",
       };
     }
   };
 
-  // Update notification preferences function
   const updateNotificationPreferences = async (preferences) => {
     setIsLoading(true);
     setError(null);
 
     try {
       const response = await axios.patch(
-        `${API_URL}/user/notification-preferences`,
+        `${API_URL}/users/notification-preferences`,
         preferences,
-        {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${userToken}` } }
       );
 
-      // Update user info in state and storage
-      const updatedUser = response.data.data.user;
+      // Ensure we always return the full updated user object
+      const updatedUser = response.data.data?.user || {};
       setUserInfo(updatedUser);
       await AsyncStorage.setItem("userInfo", JSON.stringify(updatedUser));
 
-      setIsLoading(false);
-      return { success: true };
+      return {
+        success: true,
+        user: updatedUser,
+      };
     } catch (error) {
-      setIsLoading(false);
-
-      if (error.response) {
-        setError(error.response.data.message || "Failed to update preferences");
-      } else {
-        setError("Network error. Please check your connection.");
-      }
-
+      console.error("Update preferences error:", error);
       return {
         success: false,
         error: error.response?.data?.message || "Failed to update preferences",
       };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  // Push token management
+  const savePushToken = async (token, deviceId) => {
+    try {
+      const response = await axios.post(
+        `${API_URL}/user/push-token`,
+        { token, deviceId },
+        { headers: { Authorization: `Bearer ${userToken}` } }
+      );
+
+      const updatedUser = response.data.data.user;
+      setUserInfo(updatedUser);
+      await AsyncStorage.setItem("userInfo", JSON.stringify(updatedUser));
+
+      return { success: true };
+    } catch (error) {
+      console.error("Failed to save push token:", error);
+      return { success: false };
+    }
+  };
+
+  const removePushToken = async (token) => {
+    try {
+      const response = await axios.delete(`${API_URL}/user/push-token`, {
+        data: { token },
+        headers: { Authorization: `Bearer ${userToken}` },
+      });
+
+      const updatedUser = response.data.data.user;
+      setUserInfo(updatedUser);
+      await AsyncStorage.setItem("userInfo", JSON.stringify(updatedUser));
+
+      return { success: true };
+    } catch (error) {
+      console.error("Failed to remove push token:", error);
+      return { success: false };
     }
   };
 
   // Logout function
   const logout = async () => {
     setIsLoading(true);
-    setUserToken(null);
-    setUserInfo(null);
-
-    // Remove Authorization header
-    delete axios.defaults.headers.common["Authorization"];
-
-    // Remove stored data
-    await removeUserData();
-
-    setIsLoading(false);
-  };
-
-  // Check if user is logged in on app start
-  const isLoggedIn = async () => {
     try {
-      setIsLoading(true);
-
-      // Get stored token and user info
-      const storedToken = await AsyncStorage.getItem("userToken");
-      const storedUserInfo = await AsyncStorage.getItem("userInfo");
-
-      if (storedToken && storedUserInfo) {
-        setUserToken(storedToken);
-        setUserInfo(JSON.parse(storedUserInfo));
-
-        // Configure axios to use token for future requests
-        axios.defaults.headers.common[
-          "Authorization"
-        ] = `Bearer ${storedToken}`;
-      }
-
-      setIsLoading(false);
+      setUserToken(null);
+      setUserInfo(null);
+      delete axios.defaults.headers.common["Authorization"];
+      await removeUserData();
     } catch (error) {
-      console.log("Error checking login state:", error);
+      console.error("Logout error:", error);
+    } finally {
       setIsLoading(false);
     }
   };
 
-  // Run once on component mount
+  // Check login status on app start
+  const isLoggedIn = async () => {
+    try {
+      setIsLoading(true);
+      const [storedToken, storedUserInfo] = await AsyncStorage.multiGet([
+        "userToken",
+        "userInfo",
+      ]);
+
+      if (storedToken[1] && storedUserInfo[1]) {
+        setUserToken(storedToken[1]);
+        setUserInfo(JSON.parse(storedUserInfo[1]));
+        axios.defaults.headers.common[
+          "Authorization"
+        ] = `Bearer ${storedToken[1]}`;
+      }
+    } catch (error) {
+      console.error("Login check error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     isLoggedIn();
   }, []);
@@ -368,9 +318,10 @@ export const AuthProvider = ({ children }) => {
         register,
         updateProfile,
         changePassword,
+        getNotificationPreferences,
+        updateNotificationPreferences,
         savePushToken,
         removePushToken,
-        updateNotificationPreferences,
         isLoading,
         userToken,
         userInfo,
@@ -383,7 +334,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Custom hook to use auth context
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+export const useAuth = () => useContext(AuthContext);
