@@ -5,37 +5,35 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Image,
-  Alert,
   ImageBackground,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 
 const ProfileScreen = ({ navigation }) => {
   const { userInfo, logout } = useAuth();
 
   const handleLogout = () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Logout",
-        style: "destructive",
-        onPress: () => logout(),
-      },
-    ]);
-  };
-
-  const navigateWithErrorHandling = (screenName) => {
-    try {
-      navigation.navigate(screenName);
-    } catch (error) {
-      console.error(`Error navigating to ${screenName}:`, error);
-      Alert.alert(
-        "Navigation Error",
-        `Unable to navigate to ${screenName}. Please try again later.`
-      );
-    }
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await logout();
+            } catch (error) {
+              Alert.alert("Error", "Failed to logout. Please try again.");
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   return (
@@ -54,9 +52,6 @@ const ProfileScreen = ({ navigation }) => {
               {userInfo?.lastName?.charAt(0) || ""}
             </Text>
           </View>
-          <TouchableOpacity style={styles.editButton}>
-            <Ionicons name="camera-outline" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
         </View>
 
         <Text style={styles.name}>
@@ -64,7 +59,6 @@ const ProfileScreen = ({ navigation }) => {
         </Text>
         <Text style={styles.email}>{userInfo?.email}</Text>
       </ImageBackground>
-      {/*  </View> */}
 
       {/* Account Settings */}
       <View style={styles.section}>
@@ -102,7 +96,7 @@ const ProfileScreen = ({ navigation }) => {
 
         <TouchableOpacity
           style={styles.option}
-          onPress={() => navigation.navigate("Notifications Settings")}
+          onPress={() => navigation.navigate("NotificationsSettings")}
         >
           <Ionicons
             name="notifications-outline"
@@ -259,6 +253,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     opacity: 0.5,
   },
+
   profileImageContainer: {
     position: "relative",
     marginBottom: 15,

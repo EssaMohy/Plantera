@@ -6,15 +6,13 @@ import {
   Switch,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
-import { useAuth } from "../context/AuthContext";
+import { useNotificationPreferences } from "../hooks/useAuth";
 
 const NotificationsSettingsScreen = () => {
-  const {
-    getNotificationPreferences,
-    updateNotificationPreferences,
-    isLoading: authLoading,
-  } = useAuth();
+  const { preferences, isLoading, error, updatePreferences } =
+    useNotificationPreferences();
 
   const [notificationSettings, setNotificationSettings] = useState({
     pushEnabled: false,
@@ -23,50 +21,19 @@ const NotificationsSettingsScreen = () => {
     emailNotifications: false,
   });
 
-  const [loadingStates, setLoadingStates] = useState({
-    initialLoad: true,
-    saving: false,
-    specificPreference: null,
-  });
-
-  const [error, setError] = useState(null);
-
-  // Load preferences on mount
   useEffect(() => {
-    const loadPreferences = async () => {
-      try {
-        const result = await getNotificationPreferences();
-
-        if (result.success) {
-          setNotificationSettings({
-            pushEnabled: result.preferences.pushEnabled ?? false,
-            wateringReminders: result.preferences.wateringReminders ?? false,
-            fertilizingReminders:
-              result.preferences.fertilizingReminders ?? false,
-            emailNotifications: result.preferences.emailNotifications ?? false,
-          });
-        } else {
-          setError(result.error || "Failed to load preferences");
-        }
-      } catch (err) {
-        setError("Network error. Please try again.");
-      } finally {
-        setLoadingStates((prev) => ({ ...prev, initialLoad: false }));
-      }
-    };
-
-    loadPreferences();
-  }, [getNotificationPreferences]);
+    if (preferences) {
+      setNotificationSettings({
+        pushEnabled: preferences.pushEnabled,
+        wateringReminders: preferences.wateringReminders,
+        fertilizingReminders: preferences.fertilizingReminders,
+        emailNotifications: preferences.emailNotifications,
+      });
+    }
+  }, [preferences]);
 
   const handleTogglePreference = async (preference) => {
     try {
-      setLoadingStates((prev) => ({
-        ...prev,
-        saving: true,
-        specificPreference: preference,
-      }));
-      setError(null);
-
       const newValue = !notificationSettings[preference];
       let updatedSettings = { ...notificationSettings, [preference]: newValue };
 
@@ -90,34 +57,20 @@ const NotificationsSettingsScreen = () => {
       setNotificationSettings(updatedSettings);
 
       // API call
-      const result = await updateNotificationPreferences(updatedSettings);
-
+      const result = await updatePreferences(updatedSettings);
       if (!result.success) {
-        throw new Error(result.error || "Update failed");
+        throw new Error(result.error || "Failed to update preferences");
       }
     } catch (error) {
-      // Revert on error by re-fetching
-      const result = await getNotificationPreferences();
-      if (result.success) {
-        setNotificationSettings(result.preferences);
+      Alert.alert("Error", error.message);
+      // Revert to current preferences
+      if (preferences) {
+        setNotificationSettings(preferences);
       }
-      Alert.alert("Update Failed", error.message);
-    } finally {
-      setLoadingStates((prev) => ({
-        ...prev,
-        saving: false,
-        specificPreference: null,
-      }));
     }
   };
 
-  const isToggleLoading = (preference) => {
-    return (
-      loadingStates.saving && loadingStates.specificPreference === preference
-    );
-  };
-
-  if (loadingStates.initialLoad) {
+  if (isLoading && !preferences) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#2E7D32" />
@@ -126,7 +79,7 @@ const NotificationsSettingsScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <View style={styles.settingsCard}>
         <Text style={styles.sectionTitle}>Notification Settings</Text>
         <Text style={styles.sectionSubtitle}>
@@ -147,19 +100,15 @@ const NotificationsSettingsScreen = () => {
               Enable or disable all push notifications
             </Text>
           </View>
-          {isToggleLoading("pushEnabled") ? (
-            <ActivityIndicator size="small" color="#2E7D32" />
-          ) : (
-            <Switch
-              value={notificationSettings.pushEnabled}
-              onValueChange={() => handleTogglePreference("pushEnabled")}
-              trackColor={{ false: "#767577", true: "#81c784" }}
-              thumbColor={
-                notificationSettings.pushEnabled ? "#2E7D32" : "#f4f3f4"
-              }
-              disabled={loadingStates.saving}
-            />
-          )}
+          <Switch
+            value={notificationSettings.pushEnabled}
+            onValueChange={() => handleTogglePreference("pushEnabled")}
+            trackColor={{ false: "#767577", true: "#81c784" }}
+            thumbColor={
+              notificationSettings.pushEnabled ? "#2E7D32" : "#f4f3f4"
+            }
+            disabled={isLoading}
+          />
         </View>
 
         {/* Watering Reminders */}
@@ -176,27 +125,21 @@ const NotificationsSettingsScreen = () => {
               )}
             </Text>
           </View>
-          {isToggleLoading("wateringReminders") ? (
-            <ActivityIndicator size="small" color="#2E7D32" />
-          ) : (
-            <Switch
-              value={notificationSettings.wateringReminders}
-              onValueChange={() => handleTogglePreference("wateringReminders")}
-              trackColor={{
-                false: "#767577",
-                true: notificationSettings.pushEnabled ? "#81c784" : "#cccccc",
-              }}
-              thumbColor={
-                notificationSettings.wateringReminders &&
-                notificationSettings.pushEnabled
-                  ? "#2E7D32"
-                  : "#f4f3f4"
-              }
-              disabled={
-                !notificationSettings.pushEnabled || loadingStates.saving
-              }
-            />
-          )}
+          <Switch
+            value={notificationSettings.wateringReminders}
+            onValueChange={() => handleTogglePreference("wateringReminders")}
+            trackColor={{
+              false: "#767577",
+              true: notificationSettings.pushEnabled ? "#81c784" : "#cccccc",
+            }}
+            thumbColor={
+              notificationSettings.wateringReminders &&
+              notificationSettings.pushEnabled
+                ? "#2E7D32"
+                : "#f4f3f4"
+            }
+            disabled={!notificationSettings.pushEnabled || isLoading}
+          />
         </View>
 
         {/* Fertilizing Reminders */}
@@ -213,29 +156,21 @@ const NotificationsSettingsScreen = () => {
               )}
             </Text>
           </View>
-          {isToggleLoading("fertilizingReminders") ? (
-            <ActivityIndicator size="small" color="#2E7D32" />
-          ) : (
-            <Switch
-              value={notificationSettings.fertilizingReminders}
-              onValueChange={() =>
-                handleTogglePreference("fertilizingReminders")
-              }
-              trackColor={{
-                false: "#767577",
-                true: notificationSettings.pushEnabled ? "#81c784" : "#cccccc",
-              }}
-              thumbColor={
-                notificationSettings.fertilizingReminders &&
-                notificationSettings.pushEnabled
-                  ? "#2E7D32"
-                  : "#f4f3f4"
-              }
-              disabled={
-                !notificationSettings.pushEnabled || loadingStates.saving
-              }
-            />
-          )}
+          <Switch
+            value={notificationSettings.fertilizingReminders}
+            onValueChange={() => handleTogglePreference("fertilizingReminders")}
+            trackColor={{
+              false: "#767577",
+              true: notificationSettings.pushEnabled ? "#81c784" : "#cccccc",
+            }}
+            thumbColor={
+              notificationSettings.fertilizingReminders &&
+              notificationSettings.pushEnabled
+                ? "#2E7D32"
+                : "#f4f3f4"
+            }
+            disabled={!notificationSettings.pushEnabled || isLoading}
+          />
         </View>
 
         {/* Email Notifications */}
@@ -246,22 +181,18 @@ const NotificationsSettingsScreen = () => {
               Receive notifications via email
             </Text>
           </View>
-          {isToggleLoading("emailNotifications") ? (
-            <ActivityIndicator size="small" color="#2E7D32" />
-          ) : (
-            <Switch
-              value={notificationSettings.emailNotifications}
-              onValueChange={() => handleTogglePreference("emailNotifications")}
-              trackColor={{ false: "#767577", true: "#81c784" }}
-              thumbColor={
-                notificationSettings.emailNotifications ? "#2E7D32" : "#f4f3f4"
-              }
-              disabled={loadingStates.saving}
-            />
-          )}
+          <Switch
+            value={notificationSettings.emailNotifications}
+            onValueChange={() => handleTogglePreference("emailNotifications")}
+            trackColor={{ false: "#767577", true: "#81c784" }}
+            thumbColor={
+              notificationSettings.emailNotifications ? "#2E7D32" : "#f4f3f4"
+            }
+            disabled={isLoading}
+          />
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 };
 

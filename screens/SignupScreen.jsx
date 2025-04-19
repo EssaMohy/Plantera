@@ -12,7 +12,7 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 
 const SignupScreen = ({ navigation }) => {
   const [firstName, setFirstName] = useState("");
@@ -48,11 +48,19 @@ const SignupScreen = ({ navigation }) => {
       return;
     }
 
-    // Try to register user
-    const success = await register(firstName, lastName, email, password);
+    try {
+      const result = await register(firstName, lastName, email, password);
 
-    if (!success && authError) {
-      setLocalError(authError);
+      if (!result.success) {
+        if (result.error) {
+          setLocalError(result.error);
+        } else {
+          setLocalError("Registration failed. Please try again.");
+        }
+      }
+    } catch (err) {
+      setLocalError("An unexpected error occurred. Please try again.");
+      console.error("Signup error:", err);
     }
   };
 
@@ -60,7 +68,6 @@ const SignupScreen = ({ navigation }) => {
     setShowPassword(!showPassword);
   };
 
-  // Clear any previous errors when navigating
   React.useEffect(() => {
     setError(null);
     setLocalError(null);
@@ -91,6 +98,7 @@ const SignupScreen = ({ navigation }) => {
 
               {error && (
                 <View style={styles.errorContainer}>
+                  <Ionicons name="alert-circle" size={20} color="#D32F2F" />
                   <Text style={styles.errorContainerText}>{error}</Text>
                 </View>
               )}
@@ -173,7 +181,10 @@ const SignupScreen = ({ navigation }) => {
               </View>
 
               <TouchableOpacity
-                style={styles.signupButton}
+                style={[
+                  styles.signupButton,
+                  isLoading && styles.disabledButton,
+                ]}
                 onPress={handleSignup}
                 disabled={isLoading}
               >
@@ -236,16 +247,17 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   errorContainer: {
-    backgroundColor: "#FFE8E6",
-    padding: 15,
-    marginVertical: 10,
-    borderRadius: 5,
-    borderLeftWidth: 5,
-    borderLeftColor: "#FF5252",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFEBEE",
+    padding: 12,
+    borderRadius: 6,
+    marginBottom: 15,
   },
   errorContainerText: {
     color: "#D32F2F",
     fontSize: 14,
+    marginLeft: 8,
   },
   welcomeText: {
     fontSize: 24,
@@ -305,6 +317,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
   signupButtonText: {
     color: "#FFFFFF",

@@ -8,7 +8,8 @@ import SignupScreen from "../screens/SignupScreen";
 import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import VerificationScreen from "../screens/VerificationScreen";
 import ResetPasswordScreen from "../screens/ResetPasswordScreen";
-import { AuthProvider, useAuth } from "../context/AuthContext";
+import { AuthProvider } from "../providers/AuthProvider";
+import { useAuth } from "../hooks/useAuth"; // Import directly from hooks
 
 const Stack = createStackNavigator();
 
@@ -23,9 +24,10 @@ const AuthNavigator = () => (
   </Stack.Navigator>
 );
 
-// Main app content
+// Main app content that determines which navigator to show
 const AppContent = () => {
-  const { isLoading, userToken } = useAuth();
+  // Get auth state directly from the hook
+  const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -37,7 +39,7 @@ const AppContent = () => {
 
   return (
     <NavigationContainer>
-      {userToken ? (
+      {isAuthenticated ? (
         // User is logged in
         <DrawerNavigator />
       ) : (

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,62 +7,69 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
-import { useAuth } from "../context/AuthContext";
+import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "../hooks/useAuth";
 
 const EditProfileScreen = ({ navigation }) => {
-  const { userInfo, updateProfile } = useAuth();
+  const {
+    userInfo,
+    updateProfile,
+    error,
+    setError,
+    isLoading,
+    refetchAuth, // added here
+  } = useAuth();
+
   const [firstName, setFirstName] = useState(userInfo?.firstName || "");
   const [lastName, setLastName] = useState(userInfo?.lastName || "");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => setError(null));
+    return unsubscribe;
+  }, [navigation, setError]);
 
   const handleSave = async () => {
     if (!firstName.trim() && !lastName.trim()) {
-      Alert.alert("Error", "Please enter at least one field to update");
+      setError("Please enter at least one field to update");
       return;
     }
 
     try {
-      setIsLoading(true);
       setError(null);
 
-      // Prepare data object with only the fields that have values
       const updateData = {};
-      if (firstName.trim()) updateData.firstName = firstName;
-      if (lastName.trim()) updateData.lastName = lastName;
+      if (firstName.trim()) updateData.firstName = firstName.trim();
+      if (lastName.trim()) updateData.lastName = lastName.trim();
 
-      // Use the updateProfile function from AuthContext
       const result = await updateProfile(updateData);
 
       if (result.success) {
-        setIsLoading(false);
+        await refetchAuth(); // <-- force update in cache
         Alert.alert("Success", "Your profile has been updated successfully", [
           {
             text: "OK",
-            onPress: () => {
-              // Navigate back to the Profile screen
-              navigation.navigate("Profile");
-            },
+            onPress: () => navigation.goBack(),
           },
         ]);
       } else {
-        setIsLoading(false);
-        setError(result.error);
-        Alert.alert("Error", result.error);
+        setError(result.error || "Failed to update profile");
       }
-    } catch (error) {
-      setIsLoading(false);
-      const errorMessage = "Something went wrong";
-      setError(errorMessage);
-      Alert.alert("Error", errorMessage);
+    } catch (err) {
+      setError("An unexpected error occurred");
     }
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Edit Profile</Text>
+      </View>
+
       {error && (
         <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle" size={16} color="#D32F2F" />
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
@@ -102,7 +109,7 @@ const EditProfileScreen = ({ navigation }) => {
       </View>
 
       <TouchableOpacity
-        style={styles.saveButton}
+        style={[styles.saveButton, isLoading && styles.disabledButton]}
         onPress={handleSave}
         disabled={isLoading}
       >
@@ -112,7 +119,7 @@ const EditProfileScreen = ({ navigation }) => {
           <Text style={styles.saveButtonText}>Save Changes</Text>
         )}
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -134,21 +141,22 @@ const styles = StyleSheet.create({
     color: "#333333",
   },
   errorContainer: {
-    backgroundColor: "#FFE8E6",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFEBEE",
     padding: 15,
     marginVertical: 10,
     marginHorizontal: 20,
-    borderRadius: 5,
-    borderLeftWidth: 5,
-    borderLeftColor: "#FF5252",
+    borderRadius: 6,
   },
   errorText: {
     color: "#D32F2F",
     fontSize: 14,
+    marginLeft: 8,
   },
   form: {
     backgroundColor: "#FFFFFF",
-    marginTop: 20,
+    marginTop: 10,
     paddingVertical: 20,
     paddingHorizontal: 20,
     borderTopWidth: 1,
@@ -167,7 +175,7 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: "#DDDDDD",
-    borderRadius: 5,
+    borderRadius: 8,
     paddingHorizontal: 15,
     paddingVertical: 12,
     fontSize: 16,
@@ -187,9 +195,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 30,
     paddingVertical: 15,
-    borderRadius: 5,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
   saveButtonText: {
     color: "#FFFFFF",

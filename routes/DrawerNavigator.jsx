@@ -16,7 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import StackNavigator from "./StackNavigator";
 import ProfileScreen from "../screens/ProfileScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import ProfileStack from "./ProfileStack";
 
 const Drawer = createDrawerNavigator();
@@ -25,14 +25,28 @@ const CustomDrawerContent = (props) => {
   const { userInfo, logout } = useAuth();
 
   const handleLogout = () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Logout",
-        style: "destructive",
-        onPress: () => logout(),
-      },
-    ]);
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await logout();
+            } catch (error) {
+              Alert.alert("Error", "Failed to logout. Please try again.");
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   return (
@@ -48,18 +62,20 @@ const CustomDrawerContent = (props) => {
         </View>
 
         {/* User Info */}
-        <View style={styles.userInfoContainer}>
-          <View style={styles.userAvatar}>
-            <Text style={styles.userInitials}>
-              {userInfo?.firstName?.charAt(0) || ""}
-              {userInfo?.lastName?.charAt(0) || ""}
+        {userInfo && (
+          <View style={styles.userInfoContainer}>
+            <View style={styles.userAvatar}>
+              <Text style={styles.userInitials}>
+                {userInfo?.firstName?.charAt(0) || ""}
+                {userInfo?.lastName?.charAt(0) || ""}
+              </Text>
+            </View>
+            <Text style={styles.userName}>
+              {userInfo?.firstName} {userInfo?.lastName}
             </Text>
+            <Text style={styles.userEmail}>{userInfo?.email}</Text>
           </View>
-          <Text style={styles.userName}>
-            {userInfo?.firstName} {userInfo?.lastName}
-          </Text>
-          <Text style={styles.userEmail}>{userInfo?.email}</Text>
-        </View>
+        )}
 
         {/* Drawer Items */}
         <DrawerItemList
@@ -146,12 +162,18 @@ const DrawerNavigator = () => {
         drawerIcon: ({ focused, color, size }) => {
           let iconName;
 
-          if (route.name === "MainStack") {
-            iconName = focused ? "home" : "home-outline";
-          } else if (route.name === "Profile") {
-            iconName = focused ? "person" : "person-outline";
-          } else if (route.name === "Notifications") {
-            iconName = focused ? "notifications" : "notifications-outline";
+          switch (route.name) {
+            case "MainStack":
+              iconName = focused ? "home" : "home-outline";
+              break;
+            case "Profile":
+              iconName = focused ? "person" : "person-outline";
+              break;
+            case "Notifications":
+              iconName = focused ? "notifications" : "notifications-outline";
+              break;
+            default:
+              iconName = focused ? "help" : "help-outline";
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -168,7 +190,11 @@ const DrawerNavigator = () => {
         component={ProfileStack}
         options={{ headerShown: false }}
       />
-      <Drawer.Screen name="Notifications" component={NotificationsScreen} />
+      <Drawer.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{ title: "Notifications" }}
+      />
     </Drawer.Navigator>
   );
 };

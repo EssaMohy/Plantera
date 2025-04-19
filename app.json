@@ -25,8 +25,7 @@
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.essam74.plantarea",
-      "googleServicesFile": "./google-services.json"
+      "package": "com.essam74.plantarea"
     },
     "web": {
       "favicon": "./assets/images/favicon.png"

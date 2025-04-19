@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,26 +10,34 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useAuth } from "../context/AuthContext";
-import axios from "axios";
-
-const API_URL =
-  "https://labour-jewell-plant-area-6cb70f30.koyeb.app/plantarea/api";
+import { useAuth } from "../hooks/useAuth";
 
 const ChangePasswordScreen = ({ navigation }) => {
-  const { userToken, logout } = useAuth();
+  const { changePassword, logout, isLoading, error, setError } = useAuth();
+
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleChangePassword = async () => {
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      setError(null);
+    });
+    return unsubscribe;
+  }, [navigation, setError]);
+
+  const handleSubmit = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       setError("Please fill in all fields");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setError("New password must be at least 8 characters");
       return;
     }
 
@@ -38,43 +46,21 @@ const ChangePasswordScreen = ({ navigation }) => {
       return;
     }
 
-    if (newPassword.length < 8) {
-      setError("Password must be at least 8 characters");
-      return;
-    }
-
     if (newPassword !== confirmPassword) {
-      setError("New passwords don't match");
+      setError("New passwords do not match");
       return;
     }
 
-    try {
-      setIsLoading(true);
-      setError(null);
+    const result = await changePassword(currentPassword, newPassword);
 
-      await axios.post(
-        `${API_URL}/auth/changePassword`,
-        { currentPassword, newPassword },
-        { headers: { Authorization: `Bearer ${userToken}` } }
-      );
-
-      setIsLoading(false);
+    if (result.success) {
       Alert.alert(
-        "Success",
-        "Your password has been changed successfully. Please login again.",
-        [
-          {
-            text: "OK",
-            onPress: () => logout(),
-          },
-        ]
+        "Password Changed",
+        "Your password was changed successfully. Please login again.",
+        [{ text: "OK", onPress: logout }]
       );
-    } catch (error) {
-      setIsLoading(false);
-      setError(
-        error.response?.data?.message ||
-          "Failed to change password. Please try again."
-      );
+    } else {
+      setError(result.error || "Failed to change password");
     }
   };
 
@@ -92,90 +78,46 @@ const ChangePasswordScreen = ({ navigation }) => {
       )}
 
       <View style={styles.form}>
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Current Password</Text>
-          <View style={styles.passwordInputContainer}>
-            <TextInput
-              style={styles.passwordInput}
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              placeholder="Enter your current password"
-              secureTextEntry={!showCurrentPassword}
-            />
-            <TouchableOpacity
-              style={styles.eyeIcon}
-              onPress={() => setShowCurrentPassword(!showCurrentPassword)}
-            >
-              <Ionicons
-                name={showCurrentPassword ? "eye-off-outline" : "eye-outline"}
-                size={24}
-                color="#777777"
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
+        <PasswordField
+          label="Current Password"
+          value={currentPassword}
+          onChangeText={setCurrentPassword}
+          secure={!showCurrent}
+          toggleSecure={() => setShowCurrent(!showCurrent)}
+          show={showCurrent}
+        />
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>New Password</Text>
-          <View style={styles.passwordInputContainer}>
-            <TextInput
-              style={styles.passwordInput}
-              value={newPassword}
-              onChangeText={setNewPassword}
-              placeholder="Enter your new password"
-              secureTextEntry={!showNewPassword}
-            />
-            <TouchableOpacity
-              style={styles.eyeIcon}
-              onPress={() => setShowNewPassword(!showNewPassword)}
-            >
-              <Ionicons
-                name={showNewPassword ? "eye-off-outline" : "eye-outline"}
-                size={24}
-                color="#777777"
-              />
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.helperText}>
-            Password must be at least 8 characters and cannot contain spaces
-          </Text>
-        </View>
+        <PasswordField
+          label="New Password"
+          value={newPassword}
+          onChangeText={setNewPassword}
+          secure={!showNew}
+          toggleSecure={() => setShowNew(!showNew)}
+          show={showNew}
+          helper="At least 8 characters. No spaces."
+        />
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Confirm New Password</Text>
-          <View style={styles.passwordInputContainer}>
-            <TextInput
-              style={styles.passwordInput}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              placeholder="Confirm your new password"
-              secureTextEntry={!showConfirmPassword}
-            />
-            <TouchableOpacity
-              style={styles.eyeIcon}
-              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-            >
-              <Ionicons
-                name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
-                size={24}
-                color="#777777"
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
+        <PasswordField
+          label="Confirm New Password"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secure={!showConfirm}
+          toggleSecure={() => setShowConfirm(!showConfirm)}
+          show={showConfirm}
+        />
       </View>
 
       <View style={styles.infoContainer}>
-        <Ionicons name="information-circle-outline" size={20} color="#666666" />
+        <Ionicons name="information-circle-outline" size={20} color="#666" />
         <Text style={styles.infoText}>
-          For security reasons, you'll be logged out after changing your
-          password
+          For security reasons, you’ll be logged out after changing your
+          password.
         </Text>
       </View>
 
       <TouchableOpacity
         style={[styles.changeButton, isLoading && styles.disabledButton]}
-        onPress={handleChangePassword}
+        onPress={handleSubmit}
         disabled={isLoading}
       >
         {isLoading ? (
@@ -187,6 +129,37 @@ const ChangePasswordScreen = ({ navigation }) => {
     </ScrollView>
   );
 };
+
+const PasswordField = ({
+  label,
+  value,
+  onChangeText,
+  secure,
+  toggleSecure,
+  show,
+  helper,
+}) => (
+  <View style={styles.inputContainer}>
+    <Text style={styles.label}>{label}</Text>
+    <View style={styles.passwordInputContainer}>
+      <TextInput
+        style={styles.passwordInput}
+        value={value}
+        onChangeText={onChangeText}
+        secureTextEntry={secure}
+        placeholder={label}
+      />
+      <TouchableOpacity style={styles.eyeIcon} onPress={toggleSecure}>
+        <Ionicons
+          name={show ? "eye-off-outline" : "eye-outline"}
+          size={24}
+          color="#777"
+        />
+      </TouchableOpacity>
+    </View>
+    {helper && <Text style={styles.helperText}>{helper}</Text>}
+  </View>
+);
 
 const styles = StyleSheet.create({
   container: {

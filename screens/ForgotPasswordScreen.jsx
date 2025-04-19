@@ -11,12 +11,10 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import axios from "axios";
-
-const API_URL =
-  "https://labour-jewell-plant-area-6cb70f30.koyeb.app/plantarea/api";
+import { useAuth } from "../hooks/useAuth";
 
 const ForgotPasswordScreen = ({ navigation }) => {
+  const { forgotPassword } = useAuth();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [emailError, setEmailError] = useState("");
@@ -27,10 +25,8 @@ const ForgotPasswordScreen = ({ navigation }) => {
   };
 
   const handleResetPassword = async () => {
-    // Reset previous errors
     setEmailError("");
 
-    // Validate email
     if (!email) {
       setEmailError("Email is required");
       return;
@@ -41,25 +37,19 @@ const ForgotPasswordScreen = ({ navigation }) => {
       return;
     }
 
-    setIsLoading(true);
-
     try {
-      await axios.post(`${API_URL}/auth/forgotPassword`, { email });
+      setIsLoading(true);
+      const result = await forgotPassword(email);
 
-      setIsLoading(false);
-      // Navigate to verification screen
-      navigation.navigate("Verification", { email });
-    } catch (error) {
-      setIsLoading(false);
-
-      if (error.response && error.response.status === 404) {
-        // Only show this error if server specifically returns 404
-        setEmailError("No account found with this email");
-      } else {
-        // For security reasons, don't expose specific errors
-        // Still navigate to verification screen even if email doesn't exist
+      if (result.success) {
         navigation.navigate("Verification", { email });
+      } else {
+        setEmailError(result.error || "Failed to send reset email");
       }
+    } catch (error) {
+      setEmailError("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -112,12 +102,15 @@ const ForgotPasswordScreen = ({ navigation }) => {
             />
           </View>
 
-          {emailError ? (
-            <Text style={styles.errorText}>{emailError}</Text>
-          ) : null}
+          {emailError && (
+            <View style={styles.errorContainer}>
+              <Ionicons name="alert-circle" size={16} color="#D32F2F" />
+              <Text style={styles.errorText}>{emailError}</Text>
+            </View>
+          )}
 
           <TouchableOpacity
-            style={styles.resetButton}
+            style={[styles.resetButton, isLoading && styles.disabledButton]}
             onPress={handleResetPassword}
             disabled={isLoading}
           >
@@ -182,11 +175,18 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: "#FF3B30",
   },
-  errorText: {
-    color: "#FF3B30",
-    fontSize: 14,
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFEBEE",
+    padding: 12,
+    borderRadius: 6,
     marginBottom: 15,
-    marginLeft: 5,
+  },
+  errorText: {
+    color: "#D32F2F",
+    fontSize: 14,
+    marginLeft: 8,
   },
   inputIcon: {
     marginRight: 10,
@@ -205,6 +205,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 15,
     marginTop: 15,
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
   resetButtonText: {
     color: "#FFFFFF",

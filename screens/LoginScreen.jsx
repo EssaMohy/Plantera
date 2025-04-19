@@ -12,7 +12,7 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../hooks/useAuth"; // Import from hooks directly
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -20,10 +20,13 @@ const LoginScreen = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+
+  // Use the auth hook directly
   const { login, error, setError, isLoading } = useAuth();
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
+      // Clear errors when screen comes into focus
       setError(null);
       setEmailError("");
       setPasswordError("");
@@ -37,10 +40,12 @@ const LoginScreen = ({ navigation }) => {
   };
 
   const handleLogin = async () => {
+    // Reset all errors
     setEmailError("");
     setPasswordError("");
     setError(null);
 
+    // Validate inputs
     let hasError = false;
 
     if (!email) {
@@ -64,16 +69,27 @@ const LoginScreen = ({ navigation }) => {
 
     if (hasError) return;
 
-    const success = await login(email, password);
+    try {
+      // Attempt login
+      const result = await login(email, password);
 
-    if (!success && error) {
-      if (error.includes("email") || error.includes("registered")) {
-        setEmailError(error);
-      } else if (error.includes("password") || error.includes("incorrect")) {
-        setPasswordError(error);
-      } else {
-        Alert.alert("Login Failed", error);
+      // If there's an error message but login didn't throw (returned false)
+      if (!result.success && error) {
+        if (error.includes("email") || error.includes("registered")) {
+          setEmailError(error);
+        } else if (error.includes("password") || error.includes("incorrect")) {
+          setPasswordError(error);
+        } else {
+          Alert.alert("Login Failed", error);
+        }
       }
+    } catch (err) {
+      // This would catch any unexpected errors
+      Alert.alert(
+        "Login Error",
+        "An unexpected error occurred. Please try again."
+      );
+      console.error("Login error:", err);
     }
   };
 
