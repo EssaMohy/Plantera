@@ -24,48 +24,45 @@ const NotificationsSettingsScreen = () => {
   useEffect(() => {
     if (preferences) {
       setNotificationSettings({
-        pushEnabled: preferences.pushEnabled,
-        wateringReminders: preferences.wateringReminders,
-        fertilizingReminders: preferences.fertilizingReminders,
-        emailNotifications: preferences.emailNotifications,
+        pushEnabled: preferences?.pushEnabled ?? false,
+        wateringReminders: preferences?.wateringReminders ?? false,
+        fertilizingReminders: preferences?.fertilizingReminders ?? false,
+        emailNotifications: preferences?.emailNotifications ?? false,
       });
     }
   }, [preferences]);
 
-  const handleTogglePreference = async (preference) => {
+  const handleTogglePreference = async (key) => {
     try {
-      const newValue = !notificationSettings[preference];
-      let updatedSettings = { ...notificationSettings, [preference]: newValue };
+      const currentValue = notificationSettings[key];
+      let updated = { ...notificationSettings, [key]: !currentValue };
 
-      // Handle dependencies
-      if (preference === "pushEnabled" && !newValue) {
-        updatedSettings = {
-          ...updatedSettings,
-          wateringReminders: false,
-          fertilizingReminders: false,
-        };
+      // Push notification logic dependencies
+      if (key === "pushEnabled" && !updated.pushEnabled) {
+        updated.wateringReminders = false;
+        updated.fertilizingReminders = false;
       } else if (
-        (preference === "wateringReminders" ||
-          preference === "fertilizingReminders") &&
-        newValue &&
-        !updatedSettings.pushEnabled
+        (key === "wateringReminders" || key === "fertilizingReminders") &&
+        !notificationSettings.pushEnabled
       ) {
-        updatedSettings.pushEnabled = true;
+        updated.pushEnabled = true;
       }
 
-      // Optimistic update
-      setNotificationSettings(updatedSettings);
+      setNotificationSettings(updated); // Optimistic update
 
-      // API call
-      const result = await updatePreferences(updatedSettings);
+      const result = await updatePreferences(updated);
       if (!result.success) {
         throw new Error(result.error || "Failed to update preferences");
       }
-    } catch (error) {
-      Alert.alert("Error", error.message);
-      // Revert to current preferences
+    } catch (err) {
+      Alert.alert("Error", err.message);
       if (preferences) {
-        setNotificationSettings(preferences);
+        setNotificationSettings({
+          pushEnabled: preferences?.pushEnabled ?? false,
+          wateringReminders: preferences?.wateringReminders ?? false,
+          fertilizingReminders: preferences?.fertilizingReminders ?? false,
+          emailNotifications: preferences?.emailNotifications ?? false,
+        });
       }
     }
   };
@@ -92,105 +89,64 @@ const NotificationsSettingsScreen = () => {
           </View>
         )}
 
-        {/* Push Notifications */}
-        <View style={styles.settingRow}>
-          <View style={styles.settingTextContainer}>
-            <Text style={styles.settingTitle}>Push Notifications</Text>
-            <Text style={styles.settingDescription}>
-              Enable or disable all push notifications
-            </Text>
+        {/* Settings Switches */}
+        {[
+          {
+            key: "pushEnabled",
+            title: "Push Notifications",
+            description: "Enable or disable all push notifications",
+            disabled: false,
+          },
+          {
+            key: "wateringReminders",
+            title: "Watering Reminders",
+            description: "Get notified when your plants need water",
+            disabled: !notificationSettings.pushEnabled || isLoading,
+            warning: !notificationSettings.pushEnabled,
+          },
+          {
+            key: "fertilizingReminders",
+            title: "Fertilizing Reminders",
+            description: "Get notified when your plants need nutrients",
+            disabled: !notificationSettings.pushEnabled || isLoading,
+            warning: !notificationSettings.pushEnabled,
+          },
+          {
+            key: "emailNotifications",
+            title: "Email Notifications",
+            description: "Receive notifications via email",
+            disabled: false,
+          },
+        ].map((setting) => (
+          <View style={styles.settingRow} key={setting.key}>
+            <View style={styles.settingTextContainer}>
+              <Text style={styles.settingTitle}>{setting.title}</Text>
+              <Text style={styles.settingDescription}>
+                {setting.description}
+                {setting.warning && (
+                  <Text style={styles.warningText}>
+                    {" "}
+                    (Requires push notifications)
+                  </Text>
+                )}
+              </Text>
+            </View>
+            <Switch
+              value={notificationSettings[setting.key]}
+              onValueChange={() => handleTogglePreference(setting.key)}
+              trackColor={{
+                false: "#767577",
+                true: setting.disabled ? "#cccccc" : "#81c784",
+              }}
+              thumbColor={
+                notificationSettings[setting.key] && !setting.disabled
+                  ? "#2E7D32"
+                  : "#f4f3f4"
+              }
+              disabled={setting.disabled}
+            />
           </View>
-          <Switch
-            value={notificationSettings.pushEnabled}
-            onValueChange={() => handleTogglePreference("pushEnabled")}
-            trackColor={{ false: "#767577", true: "#81c784" }}
-            thumbColor={
-              notificationSettings.pushEnabled ? "#2E7D32" : "#f4f3f4"
-            }
-            disabled={isLoading}
-          />
-        </View>
-
-        {/* Watering Reminders */}
-        <View style={styles.settingRow}>
-          <View style={styles.settingTextContainer}>
-            <Text style={styles.settingTitle}>Watering Reminders</Text>
-            <Text style={styles.settingDescription}>
-              Get notified when your plants need water
-              {!notificationSettings.pushEnabled && (
-                <Text style={styles.warningText}>
-                  {" "}
-                  (Requires push notifications)
-                </Text>
-              )}
-            </Text>
-          </View>
-          <Switch
-            value={notificationSettings.wateringReminders}
-            onValueChange={() => handleTogglePreference("wateringReminders")}
-            trackColor={{
-              false: "#767577",
-              true: notificationSettings.pushEnabled ? "#81c784" : "#cccccc",
-            }}
-            thumbColor={
-              notificationSettings.wateringReminders &&
-              notificationSettings.pushEnabled
-                ? "#2E7D32"
-                : "#f4f3f4"
-            }
-            disabled={!notificationSettings.pushEnabled || isLoading}
-          />
-        </View>
-
-        {/* Fertilizing Reminders */}
-        <View style={styles.settingRow}>
-          <View style={styles.settingTextContainer}>
-            <Text style={styles.settingTitle}>Fertilizing Reminders</Text>
-            <Text style={styles.settingDescription}>
-              Get notified when your plants need nutrients
-              {!notificationSettings.pushEnabled && (
-                <Text style={styles.warningText}>
-                  {" "}
-                  (Requires push notifications)
-                </Text>
-              )}
-            </Text>
-          </View>
-          <Switch
-            value={notificationSettings.fertilizingReminders}
-            onValueChange={() => handleTogglePreference("fertilizingReminders")}
-            trackColor={{
-              false: "#767577",
-              true: notificationSettings.pushEnabled ? "#81c784" : "#cccccc",
-            }}
-            thumbColor={
-              notificationSettings.fertilizingReminders &&
-              notificationSettings.pushEnabled
-                ? "#2E7D32"
-                : "#f4f3f4"
-            }
-            disabled={!notificationSettings.pushEnabled || isLoading}
-          />
-        </View>
-
-        {/* Email Notifications */}
-        <View style={styles.settingRow}>
-          <View style={styles.settingTextContainer}>
-            <Text style={styles.settingTitle}>Email Notifications</Text>
-            <Text style={styles.settingDescription}>
-              Receive notifications via email
-            </Text>
-          </View>
-          <Switch
-            value={notificationSettings.emailNotifications}
-            onValueChange={() => handleTogglePreference("emailNotifications")}
-            trackColor={{ false: "#767577", true: "#81c784" }}
-            thumbColor={
-              notificationSettings.emailNotifications ? "#2E7D32" : "#f4f3f4"
-            }
-            disabled={isLoading}
-          />
-        </View>
+        ))}
       </View>
     </ScrollView>
   );

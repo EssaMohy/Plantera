@@ -96,7 +96,7 @@ const ProfileScreen = ({ navigation }) => {
 
         <TouchableOpacity
           style={styles.option}
-          onPress={() => navigation.navigate("NotificationsSettings")}
+          onPress={() => navigation.navigate("Notifications Settings")}
         >
           <Ionicons
             name="notifications-outline"

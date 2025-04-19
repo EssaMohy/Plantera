@@ -13,7 +13,6 @@ import ProfileScreen from "../screens/ProfileScreen";
 import EditProfileScreen from "../screens/EditProfileScreen";
 import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 import NotificationsSettingsScreen from "../screens/NotificatinsSettingsScreen";
-import { useAuth } from "../context/AuthContext";
 
 const Stack = createStackNavigator();
 

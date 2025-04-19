@@ -14,7 +14,7 @@ import { useNavigation } from "@react-navigation/native";
 import LottieView from "lottie-react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useMyPlants, useRemoveFromMyPlants } from "../hooks/myPlants";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../hooks/useAuth"; // Fixed import path
 
 const backgroundImage = require("../assets/images/7.png");
 
@@ -54,10 +54,7 @@ const MyPlantsScreen = () => {
               },
               onError: (error) => {
                 setRemovingPlantId(null);
-                Alert.alert(
-                  "Error",
-                  error.response?.data?.message || "Failed to remove plant"
-                );
+                Alert.alert("Error", error.message || "Failed to remove plant");
               },
             });
           },
@@ -116,8 +113,13 @@ const MyPlantsScreen = () => {
   );
 
   const renderPlantItem = ({ item }) => {
-    // Handle both nested and flat plant data structure
+    // Handle both nested and flat plant data structure more safely
     const plant = item.plant || item;
+
+    // Safety check to ensure plant object exists
+    if (!plant || !plant._id) {
+      return null;
+    }
 
     return (
       <View style={styles.plantCard}>
@@ -127,8 +129,12 @@ const MyPlantsScreen = () => {
         >
           <Image source={{ uri: plant.image }} style={styles.plantImage} />
           <View style={styles.plantInfo}>
-            <Text style={styles.plantName}>{plant.commonName}</Text>
-            <Text style={styles.plantScientific}>{plant.scientificName}</Text>
+            <Text style={styles.plantName}>
+              {plant.commonName || "Unknown Plant"}
+            </Text>
+            <Text style={styles.plantScientific}>
+              {plant.scientificName || ""}
+            </Text>
           </View>
         </TouchableOpacity>
 
@@ -167,9 +173,7 @@ const MyPlantsScreen = () => {
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>
               Unable to load your plants:{" "}
-              {error?.response?.data?.message ||
-                error?.message ||
-                "Please try again later"}
+              {error?.message || "Please try again later"}
             </Text>
             <TouchableOpacity
               style={[styles.button, { marginTop: 20 }]}
@@ -193,7 +197,11 @@ const MyPlantsScreen = () => {
         <FlatList
           data={myPlants}
           renderItem={renderPlantItem}
-          keyExtractor={(item) => (item.plant ? item.plant._id : item._id)}
+          keyExtractor={(item) => {
+            // Safe key extraction with fallback
+            const id = item?.plant?._id || item?._id;
+            return id ? id.toString() : Math.random().toString();
+          }}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
         />

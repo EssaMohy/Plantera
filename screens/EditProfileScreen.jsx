@@ -63,10 +63,6 @@ const EditProfileScreen = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
-      </View>
-
       {error && (
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle" size={16} color="#D32F2F" />

@@ -13,11 +13,12 @@ import {
   Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import LottieView from "lottie-react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import axiosInstance from "../api/axiosInstance";
 import { useUpcomingTasks } from "../hooks/plantCare";
+import { useNotificationPreferences } from "../hooks/useAuth";
 
 const backgroundImage = require("../assets/images/7.png");
 
@@ -32,16 +33,17 @@ const NotificationsScreen = () => {
     refetch: refetchTasks,
   } = useUpcomingTasks();
   const [notifications, setNotifications] = useState([]);
-  const [notificationSettings, setNotificationSettings] = useState({
-    wateringReminders: true,
-    fertilizingReminders: true,
-    pushEnabled: true,
-    emailNotifications: false,
-  });
   const [apiErrors, setApiErrors] = useState({
-    preferences: null,
     notifications: null,
   });
+
+  // Use the notification preferences hook
+  const {
+    preferences: notificationSettings,
+    isLoading: prefsLoading,
+    error: prefsError,
+    updatePreferences,
+  } = useNotificationPreferences();
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -73,26 +75,6 @@ const NotificationsScreen = () => {
     return `In ${diffDays} days`;
   };
 
-  // Fetch notification preferences from backend
-  const fetchNotificationPreferences = async () => {
-    setApiErrors((prev) => ({ ...prev, preferences: null }));
-    try {
-      const response = await axiosInstance.get(
-        "/users/notification-preferences"
-      );
-      if (response.data?.data?.preferences) {
-        setNotificationSettings(response.data.data.preferences);
-      }
-    } catch (err) {
-      setApiErrors((prev) => ({
-        ...prev,
-        preferences:
-          err.response?.data?.message || "Failed to load preferences",
-      }));
-      console.error("Error fetching preferences:", err);
-    }
-  };
-
   // Fetch user's notifications
   const fetchNotifications = async () => {
     setApiErrors((prev) => ({ ...prev, notifications: null }));
@@ -115,11 +97,7 @@ const NotificationsScreen = () => {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([
-        refetchTasks(),
-        fetchNotifications(),
-        fetchNotificationPreferences(),
-      ]);
+      await Promise.all([refetchTasks(), fetchNotifications()]);
     } catch (error) {
       console.error("Refresh error:", error);
     } finally {
@@ -129,22 +107,11 @@ const NotificationsScreen = () => {
 
   // Toggle notification settings
   const handleTogglePreference = async (key) => {
-    const updatedSettings = {
-      ...notificationSettings,
-      [key]: !notificationSettings[key],
-    };
-
-    // Optimistic update
-    setNotificationSettings(updatedSettings);
-
+    const updatedValue = !notificationSettings[key];
     try {
-      await axiosInstance.patch("/users/update-notification-preferences", {
-        [key]: updatedSettings[key],
-      });
+      await updatePreferences({ [key]: updatedValue });
     } catch (err) {
       console.error("Error updating preferences:", err);
-      // Revert on error
-      setNotificationSettings(notificationSettings);
     }
   };
 
@@ -177,7 +144,6 @@ const NotificationsScreen = () => {
   useEffect(() => {
     if (userToken) {
       fetchNotifications();
-      fetchNotificationPreferences();
     }
   }, [userToken]);
 
@@ -338,8 +304,8 @@ const NotificationsScreen = () => {
     );
   }
 
-  const isLoading = tasksLoading || refreshing;
-  const error = tasksError || apiErrors.preferences || apiErrors.notifications;
+  const isLoading = tasksLoading || refreshing || prefsLoading;
+  const error = tasksError || apiErrors.notifications || prefsError;
 
   return (
     <ImageBackground source={backgroundImage} style={styles.background}>
@@ -356,9 +322,7 @@ const NotificationsScreen = () => {
             Customize your plant care reminders
           </Text>
 
-          {apiErrors.preferences && (
-            <Text style={styles.errorText}>{apiErrors.preferences}</Text>
-          )}
+          {prefsError && <Text style={styles.errorText}>{prefsError}</Text>}
 
           <View style={styles.settingRow}>
             <View style={styles.settingTextContainer}>
@@ -368,11 +332,11 @@ const NotificationsScreen = () => {
               </Text>
             </View>
             <Switch
-              value={notificationSettings.pushEnabled}
+              value={notificationSettings?.pushEnabled || false}
               onValueChange={() => handleTogglePreference("pushEnabled")}
               trackColor={{ false: "#767577", true: "#81c784" }}
               thumbColor={
-                notificationSettings.pushEnabled ? "#2E7D32" : "#f4f3f4"
+                notificationSettings?.pushEnabled ? "#2E7D32" : "#f4f3f4"
               }
             />
           </View>
@@ -385,13 +349,13 @@ const NotificationsScreen = () => {
               </Text>
             </View>
             <Switch
-              value={notificationSettings.wateringReminders}
+              value={notificationSettings?.wateringReminders || false}
               onValueChange={() => handleTogglePreference("wateringReminders")}
               trackColor={{ false: "#767577", true: "#81c784" }}
               thumbColor={
-                notificationSettings.wateringReminders ? "#2E7D32" : "#f4f3f4"
+                notificationSettings?.wateringReminders ? "#2E7D32" : "#f4f3f4"
               }
-              disabled={!notificationSettings.pushEnabled}
+              disabled={!notificationSettings?.pushEnabled}
             />
           </View>
 
@@ -403,17 +367,17 @@ const NotificationsScreen = () => {
               </Text>
             </View>
             <Switch
-              value={notificationSettings.fertilizingReminders}
+              value={notificationSettings?.fertilizingReminders || false}
               onValueChange={() =>
                 handleTogglePreference("fertilizingReminders")
               }
               trackColor={{ false: "#767577", true: "#81c784" }}
               thumbColor={
-                notificationSettings.fertilizingReminders
+                notificationSettings?.fertilizingReminders
                   ? "#2E7D32"
                   : "#f4f3f4"
               }
-              disabled={!notificationSettings.pushEnabled}
+              disabled={!notificationSettings?.pushEnabled}
             />
           </View>
 
@@ -425,11 +389,11 @@ const NotificationsScreen = () => {
               </Text>
             </View>
             <Switch
-              value={notificationSettings.emailNotifications}
+              value={notificationSettings?.emailNotifications || false}
               onValueChange={() => handleTogglePreference("emailNotifications")}
               trackColor={{ false: "#767577", true: "#81c784" }}
               thumbColor={
-                notificationSettings.emailNotifications ? "#2E7D32" : "#f4f3f4"
+                notificationSettings?.emailNotifications ? "#2E7D32" : "#f4f3f4"
               }
             />
           </View>

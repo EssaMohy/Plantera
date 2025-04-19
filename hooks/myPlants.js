@@ -1,65 +1,139 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import axiosInstance from "../api/axiosInstance";
-import { useAuth } from "../context/AuthContext"; // Import auth context to check login status
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "./useAuth";
 
-// Fetch user's my plants
-const fetchMyPlants = async () => {
+const API_URL =
+  "https://labour-jewell-plant-area-6cb70f30.koyeb.app/plantarea/api";
+
+const getAuthToken = async () => {
   try {
-    // Using the correct API endpoint path from your backend routes
-    const { data } = await axiosInstance.get("/my-plants");
-    return data.data.myPlants;
+    return await AsyncStorage.getItem("userToken");
   } catch (error) {
-    console.error("Error fetching my plants:", error);
-    throw error;
+    console.error("Error getting auth token:", error);
+    return null;
   }
 };
 
-// Hook to get user's plants with auth check
+const fetchMyPlants = async () => {
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error("Authentication required");
+    }
+
+    const { data } = await axios.get(`${API_URL}/my-plants`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!data?.data?.myPlants) {
+      throw new Error("Invalid response format");
+    }
+    return data.data.myPlants;
+  } catch (error) {
+    console.error("Error fetching my plants:", error);
+    // Handle the specific localStorage error
+    if (error.message && error.message.includes("localStorage")) {
+      throw new Error("Storage API is not available");
+    }
+    throw new Error(
+      error.response?.data?.message || error.message || "Failed to load plants"
+    );
+  }
+};
+
 export const useMyPlants = () => {
-  const { userToken } = useAuth(); // Get auth state
+  const { userToken } = useAuth();
 
   return useQuery({
     queryKey: ["myPlants"],
     queryFn: fetchMyPlants,
-    // Only run query if user is logged in
     enabled: !!userToken,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 2,
   });
 };
 
-// Add a plant to my plants
 const addToMyPlants = async (plantId) => {
-  const { data } = await axiosInstance.post("/my-plants", { plantId });
-  return data;
+  if (!plantId || typeof plantId !== "string") {
+    throw new Error("Invalid plant ID");
+  }
+
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error("Authentication required");
+    }
+
+    const { data } = await axios.post(
+      `${API_URL}/my-plants`,
+      { plantId },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return data;
+  } catch (error) {
+    console.error("Error adding plant:", error);
+    // Handle the specific localStorage error
+    if (error.message && error.message.includes("localStorage")) {
+      throw new Error("Storage API is not available");
+    }
+    throw new Error(
+      error.response?.data?.message || error.message || "Failed to add plant"
+    );
+  }
 };
 
-// Remove a plant from my plants
 const removeFromMyPlants = async (plantId) => {
-  const { data } = await axiosInstance.delete(`/my-plants/${plantId}`);
-  return data;
+  if (!plantId || typeof plantId !== "string") {
+    throw new Error("Invalid plant ID");
+  }
+
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error("Authentication required");
+    }
+
+    const { data } = await axios.delete(`${API_URL}/my-plants/${plantId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return data;
+  } catch (error) {
+    console.error("Error removing plant:", error);
+    // Handle the specific localStorage error
+    if (error.message && error.message.includes("localStorage")) {
+      throw new Error("Storage API is not available");
+    }
+    throw new Error(
+      error.response?.data?.message || error.message || "Failed to remove plant"
+    );
+  }
 };
 
-// Hook for adding plants
 export const useAddToMyPlants = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: addToMyPlants,
     onSuccess: () => {
-      // Invalidate the my plants query to trigger a refetch
-      queryClient.invalidateQueries({ queryKey: ["myPlants"] });
+      queryClient.invalidateQueries(["myPlants"]);
+    },
+    onError: (error) => {
+      console.error("Add to my plants error:", error);
     },
   });
 };
 
-// Hook for removing plants
 export const useRemoveFromMyPlants = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: removeFromMyPlants,
     onSuccess: () => {
-      // Invalidate the my plants query to trigger a refetch
-      queryClient.invalidateQueries({ queryKey: ["myPlants"] });
+      queryClient.invalidateQueries(["myPlants"]);
+    },
+    onError: (error) => {
+      console.error("Remove from my plants error:", error);
     },
   });
 };

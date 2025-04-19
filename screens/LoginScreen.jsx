@@ -75,20 +75,14 @@ const LoginScreen = ({ navigation }) => {
 
       // If there's an error message but login didn't throw (returned false)
       if (!result.success && error) {
-        if (error.includes("email") || error.includes("registered")) {
-          setEmailError(error);
-        } else if (error.includes("password") || error.includes("incorrect")) {
-          setPasswordError(error);
-        } else {
-          Alert.alert("Login Failed", error);
-        }
+        // Highlight both fields and show error message
+        setEmailError("Invalid credentials");
+        setPasswordError("Invalid credentials");
       }
     } catch (err) {
       // This would catch any unexpected errors
-      Alert.alert(
-        "Login Error",
-        "An unexpected error occurred. Please try again."
-      );
+      setEmailError("An error occurred");
+      setPasswordError("Please try again");
       console.error("Login error:", err);
     }
   };

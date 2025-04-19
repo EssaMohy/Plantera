@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,16 +8,23 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../hooks/useAuth";
 
 const ForgotPasswordScreen = ({ navigation }) => {
-  const { forgotPassword } = useAuth();
+  const { forgotPassword, isLoading, error, setError } = useAuth();
+
   const [email, setEmail] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [emailError, setEmailError] = useState("");
+  const [localError, setLocalError] = useState("");
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      setError(null);
+      setLocalError("");
+    });
+    return unsubscribe;
+  }, [navigation, setError]);
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -25,31 +32,27 @@ const ForgotPasswordScreen = ({ navigation }) => {
   };
 
   const handleResetPassword = async () => {
-    setEmailError("");
+    setLocalError("");
+    setError(null);
 
     if (!email) {
-      setEmailError("Email is required");
+      setLocalError("Email is required");
       return;
     }
 
     if (!validateEmail(email)) {
-      setEmailError("Please enter a valid email address");
+      setLocalError("Please enter a valid email address");
       return;
     }
 
-    try {
-      setIsLoading(true);
-      const result = await forgotPassword(email);
+    const result = await forgotPassword(email);
 
-      if (result.success) {
-        navigation.navigate("Verification", { email });
-      } else {
-        setEmailError(result.error || "Failed to send reset email");
-      }
-    } catch (error) {
-      setEmailError("An unexpected error occurred");
-    } finally {
-      setIsLoading(false);
+    console.log("Forgot password result:", result); // for debugging
+
+    if (result?.success) {
+      navigation.navigate("Verification", { email });
+    } else {
+      setError(result?.error || "Failed to send reset email");
     }
   };
 
@@ -80,7 +83,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
           <View
             style={[
               styles.inputContainer,
-              emailError ? styles.inputError : null,
+              (localError || error) && styles.inputError,
             ]}
           >
             <Ionicons
@@ -95,17 +98,19 @@ const ForgotPasswordScreen = ({ navigation }) => {
               value={email}
               onChangeText={(text) => {
                 setEmail(text);
-                setEmailError("");
+                setLocalError("");
+                setError(null);
               }}
               keyboardType="email-address"
               autoCapitalize="none"
+              autoCorrect={false}
             />
           </View>
 
-          {emailError && (
+          {(localError || error) && (
             <View style={styles.errorContainer}>
               <Ionicons name="alert-circle" size={16} color="#D32F2F" />
-              <Text style={styles.errorText}>{emailError}</Text>
+              <Text style={styles.errorText}>{localError || error}</Text>
             </View>
           )}
 
