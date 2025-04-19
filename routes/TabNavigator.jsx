@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import {
   Platform,
@@ -19,7 +19,7 @@ const Tab = createBottomTabNavigator();
 const EmptyComponent = () => null;
 
 const TabNavigator = () => {
-  const [isScanModalVisible, setScanModalVisible] = useState(false);
+  const modalizeRef = useRef(null);
   const navigation = useNavigation();
 
   const DrawerButton = () => (
@@ -48,6 +48,13 @@ const TabNavigator = () => {
         </View>
       </TouchableOpacity>
     );
+  };
+
+  // Handle modal close
+  const handleModalClose = () => {
+    // This function is just a pass-through now and doesn't do anything that might
+    // trigger a loop or recursive call
+    console.log("Modal closed");
   };
 
   return (
@@ -126,7 +133,7 @@ const TabNavigator = () => {
           listeners={{
             tabPress: (e) => {
               e.preventDefault();
-              setScanModalVisible(true);
+              modalizeRef.current?.open();
             },
           }}
         />
@@ -149,10 +156,7 @@ const TabNavigator = () => {
           }}
         />
       </Tab.Navigator>
-      <ScanModal
-        isVisible={isScanModalVisible}
-        onClose={() => setScanModalVisible(false)}
-      />
+      <ScanModal ref={modalizeRef} onClose={handleModalClose} />
     </>
   );
 };

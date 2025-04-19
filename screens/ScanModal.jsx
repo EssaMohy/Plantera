@@ -1,27 +1,37 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import Modal from "react-native-modal";
+import { Modalize } from "react-native-modalize";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-const ScanModal = ({ isVisible, onClose }) => {
+const ScanModal = React.forwardRef(({ onClose }, ref) => {
+  // Create a button press handler that won't create an infinite loop
+  const handleButtonPress = (action) => {
+    console.log(`${action} Button Pressed`);
+    // Close the modal directly without calling the onClose prop
+    if (ref && ref.current) {
+      ref.current.close();
+    }
+  };
+
   return (
-    <Modal
-      isVisible={isVisible}
-      onBackdropPress={onClose}
-      onSwipeComplete={onClose}
-      swipeDirection="down"
-      style={styles.modal}
+    <Modalize
+      ref={ref}
+      onClose={onClose}
+      modalStyle={styles.modal}
+      handlePosition="inside"
+      handleStyle={styles.handle}
+      adjustToContentHeight={true}
+      childrenStyle={styles.modalContent}
+      withOverlay={true}
     >
-      <View style={styles.modalContent}>
+      <View style={styles.content}>
         <Text style={styles.modalText}>Scan</Text>
 
-        {/* Two Circle Buttons with Labels */}
         <View style={styles.buttonContainer}>
-          {/* Identification Button */}
           <View style={styles.buttonWrapper}>
             <TouchableOpacity
               style={[styles.circleButton, { backgroundColor: "#14AE5C" }]}
-              onPress={() => console.log("Identification Button Pressed")}
+              onPress={() => handleButtonPress("Identification")}
             >
               <MaterialCommunityIcons
                 name="leaf-maple"
@@ -32,11 +42,10 @@ const ScanModal = ({ isVisible, onClose }) => {
             <Text style={styles.buttonLabel}>Identification</Text>
           </View>
 
-          {/* Detect a Disease Button */}
           <View style={styles.buttonWrapper}>
             <TouchableOpacity
               style={[styles.circleButton, { backgroundColor: "#FF6B6B" }]}
-              onPress={() => console.log("Detect a Disease Button Pressed")}
+              onPress={() => handleButtonPress("Detect a Disease")}
             >
               <MaterialCommunityIcons name="virus" size={52} color="white" />
             </TouchableOpacity>
@@ -44,53 +53,60 @@ const ScanModal = ({ isVisible, onClose }) => {
           </View>
         </View>
       </View>
-    </Modal>
+    </Modalize>
   );
-};
+});
 
 const styles = StyleSheet.create({
   modal: {
-    justifyContent: "flex-end",
-    margin: 0,
-  },
-  modalContent: {
-    backgroundColor: "white",
-    padding: 22,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    height: "30%", // Increased height to accommodate labels
-    alignItems: "center", // Center content horizontally
+    backgroundColor: "white",
+  },
+  modalContent: {
+    padding: 22,
+  },
+  content: {
+    alignItems: "center",
+  },
+  handle: {
+    backgroundColor: "#E0E0E0",
+    width: 40,
+    height: 5,
+    borderRadius: 5,
+    marginTop: 10,
   },
   modalText: {
     fontSize: 18,
     textAlign: "center",
-    marginBottom: 20, // Add some space below the text
+    marginBottom: 20,
   },
   buttonContainer: {
-    flexDirection: "row", // Arrange buttons horizontally
-    justifyContent: "space-around", // Space buttons evenly
-    width: "100%", // Take full width
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    marginBottom: 20,
   },
   buttonWrapper: {
-    alignItems: "center", // Center button and label
+    alignItems: "center",
   },
   circleButton: {
     width: 90,
     height: 90,
-    borderRadius: 45, // Make it circular
+    borderRadius: 45,
     justifyContent: "center",
     alignItems: "center",
-    elevation: 5, // Add shadow for Android
-    shadowColor: "#000", // Add shadow for iOS
+    elevation: 5,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
   },
   buttonLabel: {
-    marginTop: 10, // Space between button and label
+    marginTop: 10,
     fontSize: 14,
     fontWeight: "bold",
-    color: "#525252", // Label text color
+    color: "#525252",
   },
 });
 
