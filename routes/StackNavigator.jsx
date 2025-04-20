@@ -9,6 +9,7 @@ import CategoryScreen from "../screens/CategoryScreen";
 import HomeScreen from "../screens/HomeScreen";
 import ArticleDetailsScreen from "../screens/ArticleDetailsScreen";
 import MyPlantsScreen from "../screens/MyPlantsScreen";
+import ImagePreviewScreen from "../screens/ImagePreviewScreen";
 
 const Stack = createStackNavigator();
 
@@ -81,6 +82,28 @@ const StackNavigator = () => {
         name="MyPlants"
         component={MyPlantsScreen}
         options={{ headerShown: false }}
+      />
+
+      <Stack.Screen
+        name="ImagePreview"
+        component={ImagePreviewScreen}
+        options={({ route }) => ({
+          title:
+            route.params.action === "Identification"
+              ? "Plant Identification"
+              : "Disease Detection",
+          headerTintColor: "#2E7D32", // Changes the back button and header text color
+          headerTitleStyle: {
+            fontWeight: "bold",
+            color: "#2E7D32", // Title text color
+          },
+          headerTitleAlign: "center", // Centers the title
+          headerStyle: {
+            elevation: 0, // Removes shadow on Android
+            shadowOpacity: 0, // Removes shadow on iOS
+            borderBottomWidth: 0, // Removes the bottom border
+          },
+        })}
       />
     </Stack.Navigator>
   );
