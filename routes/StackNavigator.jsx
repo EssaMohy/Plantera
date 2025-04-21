@@ -10,6 +10,7 @@ import HomeScreen from "../screens/HomeScreen";
 import ArticleDetailsScreen from "../screens/ArticleDetailsScreen";
 import MyPlantsScreen from "../screens/MyPlantsScreen";
 import ImagePreviewScreen from "../screens/ImagePreviewScreen";
+import CalendarScreen from "../screens/CalendarScreen";
 
 const Stack = createStackNavigator();
 
@@ -104,6 +105,24 @@ const StackNavigator = () => {
             borderBottomWidth: 0, // Removes the bottom border
           },
         })}
+      />
+      <Stack.Screen
+        name="Calendar"
+        component={CalendarScreen}
+        options={{
+          title: "Plant Care Calendar",
+          headerTintColor: "#2E7D32",
+          headerTitleStyle: {
+            fontWeight: "bold",
+            color: "#2E7D32",
+          },
+          headerTitleAlign: "center",
+          headerStyle: {
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0,
+          },
+        }}
       />
     </Stack.Navigator>
   );

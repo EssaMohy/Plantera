@@ -67,16 +67,12 @@ const addToMyPlants = async (plantId) => {
 
     const { data } = await axios.post(
       `${API_URL}/my-plants`,
-      { plantId },
+      { plantId }, // Just send plantId, no scheduling data
       { headers: { Authorization: `Bearer ${token}` } }
     );
     return data;
   } catch (error) {
     console.error("Error adding plant:", error);
-    // Handle the specific localStorage error
-    if (error.message && error.message.includes("localStorage")) {
-      throw new Error("Storage API is not available");
-    }
     throw new Error(
       error.response?.data?.message || error.message || "Failed to add plant"
     );
@@ -134,6 +130,79 @@ export const useRemoveFromMyPlants = () => {
     },
     onError: (error) => {
       console.error("Remove from my plants error:", error);
+    },
+  });
+};
+
+// Add to myPlants.js
+const schedulePlantCare = async ({
+  plantId,
+  wateringFrequency,
+  fertilizingFrequency,
+}) => {
+  try {
+    const token = await getAuthToken();
+    if (!token) throw new Error("Authentication required");
+
+    const { data } = await axios.patch(
+      `${API_URL}/my-plants/${plantId}/schedule`,
+      { wateringFrequency, fertilizingFrequency },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return data;
+  } catch (error) {
+    console.error("Error scheduling plant care:", error);
+    throw new Error(
+      error.response?.data?.message ||
+        error.message ||
+        "Failed to schedule care"
+    );
+  }
+};
+
+export const useSchedulePlantCare = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: schedulePlantCare,
+    onSuccess: () => {
+      queryClient.invalidateQueries(["myPlants"]);
+    },
+  });
+};
+
+// Add to myPlants.js
+const schedulePlantCareNotification = async ({ plantId, type, days }) => {
+  try {
+    const token = await getAuthToken();
+    if (!token) throw new Error("Authentication required");
+
+    const { data } = await axios.post(
+      `${API_URL}/notifications/schedule`,
+      {
+        plantId,
+        type, // 'watering' or 'fertilizing'
+        days,
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return data;
+  } catch (error) {
+    console.error("Error scheduling notification:", error);
+    throw new Error(
+      error.response?.data?.message || "Failed to schedule notification"
+    );
+  }
+};
+
+export const useSchedulePlantCareNotification = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: schedulePlantCareNotification,
+    onSuccess: () => {
+      queryClient.invalidateQueries(["myPlants"]);
+      queryClient.invalidateQueries(["upcomingTasks"]);
     },
   });
 };

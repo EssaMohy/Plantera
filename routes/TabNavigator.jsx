@@ -50,6 +50,20 @@ const TabNavigator = () => {
     );
   };
 
+  // New calendar button component
+  const CalendarButton = () => {
+    const navigation = useNavigation();
+    return (
+      <TouchableOpacity
+        style={styles.calendarButton}
+        onPress={() => navigation.navigate("Calendar")}
+        testID="calendar-button"
+      >
+        <Ionicons name="calendar" size={24} color="#2E7D32" />
+      </TouchableOpacity>
+    );
+  };
+
   // Handle modal close
   const handleModalClose = () => {
     // This function is just a pass-through now and doesn't do anything that might
@@ -88,7 +102,12 @@ const TabNavigator = () => {
           headerTintColor: "#2E7D32",
           headerTitleAlign: "center",
           headerLeft: () => <DrawerButton />,
-          headerRight: () => <NotificationButton />,
+          headerRight: () => (
+            <View style={styles.headerRightContainer}>
+              <CalendarButton />
+              <NotificationButton />
+            </View>
+          ),
         })}
       >
         <Tab.Screen
@@ -208,6 +227,14 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 10,
     fontWeight: "bold",
+  },
+  headerRightContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  calendarButton: {
+    padding: 10,
+    marginRight: 5,
   },
 });
 

@@ -17,13 +17,15 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.essam74.plantarea",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCalendarsUsageDescription": "This app needs calendar access to create plant care reminders"
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#ffffff",
+        "permissions": ["READ_CALENDAR", "WRITE_CALENDAR"]
       },
       "package": "com.essam74.plantarea"
     },
