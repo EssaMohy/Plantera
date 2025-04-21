@@ -18,7 +18,8 @@
       "bundleIdentifier": "com.essam74.plantarea",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSCalendarsUsageDescription": "This app needs calendar access to create plant care reminders"
+        "NSCalendarsUsageDescription": "This app needs access to your calendar to manage plant care reminders",
+        "NSRemindersUsageDescription": "This app needs access to your reminders to manage plant care tasks"
       }
     },
     "android": {

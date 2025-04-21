@@ -39,12 +39,23 @@ const CalendarScreen = () => {
     const setupCalendar = async () => {
       try {
         console.log("Requesting calendar permissions...");
-        const { status } = await Calendar.requestCalendarPermissionsAsync();
 
-        if (status !== "granted") {
+        // Request both calendar and reminders permissions on iOS
+        const permissions =
+          Platform.OS === "ios"
+            ? await Promise.all([
+                Calendar.requestCalendarPermissionsAsync(),
+                Calendar.requestRemindersPermissionsAsync(),
+              ])
+            : [await Calendar.requestCalendarPermissionsAsync()];
+
+        // Check if all required permissions are granted
+        const allGranted = permissions.every((p) => p.status === "granted");
+
+        if (!allGranted) {
           Alert.alert(
             "Permission Required",
-            "Please enable calendar access to view plant care events",
+            "Please enable calendar and reminders access to view plant care events",
             [
               {
                 text: "Cancel",
@@ -77,7 +88,22 @@ const CalendarScreen = () => {
     const loadEvents = async () => {
       try {
         console.log("Loading calendar events...");
-        const calendars = await Calendar.getCalendarsAsync();
+        let calendars;
+
+        try {
+          calendars = await Calendar.getCalendarsAsync();
+        } catch (error) {
+          if (error.message.includes("REMINDERS permission")) {
+            Alert.alert(
+              "Reminders Permission Required",
+              "Please enable reminders access in Settings to use calendar features",
+              [{ text: "OK" }]
+            );
+            return;
+          }
+          throw error;
+        }
+
         const defaultCalendar =
           calendars.find((c) => c.isPrimary) || calendars[0];
 
@@ -205,7 +231,21 @@ const CalendarScreen = () => {
   // Add task to device calendar
   const addTaskToCalendar = async (task) => {
     try {
-      const calendars = await Calendar.getCalendarsAsync();
+      let calendars;
+      try {
+        calendars = await Calendar.getCalendarsAsync();
+      } catch (error) {
+        if (error.message.includes("REMINDERS permission")) {
+          Alert.alert(
+            "Reminders Permission Required",
+            "Please enable reminders access in Settings to add calendar events",
+            [{ text: "OK" }]
+          );
+          return;
+        }
+        throw error;
+      }
+
       const defaultCalendar =
         calendars.find((c) => c.isPrimary) || calendars[0];
 
