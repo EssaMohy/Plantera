@@ -185,6 +185,9 @@ const CalendarScreen = () => {
   // Check if task is already in calendar
   const isTaskInCalendar = (task) => {
     return events.some((event) => {
+      // Check if event.startDate exists and is a valid Date object
+      if (!event.startDate || !(event.startDate instanceof Date)) return false;
+
       const isSameDay =
         event.startDate.getDate() === task.date.getDate() &&
         event.startDate.getMonth() === task.date.getMonth() &&
@@ -220,12 +223,15 @@ const CalendarScreen = () => {
         return;
       }
 
+      const startDate = new Date(task.date);
+      const endDate = new Date(startDate.getTime() + 30 * 60 * 1000);
+
       const eventDetails = {
         title: `${task.type === "watering" ? "💧 Water" : "🌿 Fertilize"} ${
           plant.commonName
         }`,
-        startDate: task.date,
-        endDate: new Date(task.date.getTime() + 30 * 60 * 1000),
+        startDate: startDate,
+        endDate: endDate,
         timeZone: "UTC",
         alarms: [{ relativeOffset: -60 }],
         notes: `Plant care reminder for ${plant.commonName} (${plant.scientificName})`,
