@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -14,23 +14,29 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
 import CareGuideCard from "../components/CareGuideCard";
-import { useAddToMyPlants } from "../hooks/myPlants"; // Import the hook
+import { useAddToMyPlants, useMyPlants } from "../hooks/myPlants";
+import { useAuth } from "../hooks/useAuth";
 
 const { width } = Dimensions.get("screen");
 
 const SinglePlantScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { plant } = route.params; // Get plant data from navigation params
+  const { plant } = route.params;
+  const { userToken } = useAuth();
 
-  // Use the mutation hook
+  // Get user's plants
+  const { data: myPlants } = useMyPlants();
   const addToMyPlantsMutation = useAddToMyPlants();
 
-  // Handle adding plant to My Plants
+  // Check if plant is already in user's collection
+  const isPlantAdded = myPlants?.some(
+    (item) => item.plant?._id === plant._id || item._id === plant._id
+  );
+
   const handleAddToMyPlants = () => {
     addToMyPlantsMutation.mutate(plant._id, {
       onSuccess: (data) => {
-        // Show success message
         Alert.alert("Success", `${plant.commonName} added to your plants!`, [
           {
             text: "OK",
@@ -39,7 +45,6 @@ const SinglePlantScreen = () => {
         ]);
       },
       onError: (error) => {
-        // Show error message
         Alert.alert(
           "Error",
           error.response?.data?.message ||
@@ -117,21 +122,30 @@ const SinglePlantScreen = () => {
       <View style={{ height: 100 }} />
       <TouchableOpacity
         activeOpacity={0.7}
-        style={styles.addButton}
+        style={[
+          styles.addButton,
+          (isPlantAdded || !userToken) && styles.disabledButton,
+        ]}
         onPress={handleAddToMyPlants}
-        disabled={addToMyPlantsMutation.isPending}
+        disabled={isPlantAdded || !userToken || addToMyPlantsMutation.isPending}
       >
         {addToMyPlantsMutation.isPending ? (
           <ActivityIndicator size="small" color="white" />
         ) : (
           <>
             <Icon
-              name="add"
+              name={isPlantAdded ? "checkmark" : "add"}
               size={22}
               color="white"
               style={styles.addButtonIcon}
             />
-            <Text style={styles.addButtonText}>Add to My Plants</Text>
+            <Text style={styles.addButtonText}>
+              {isPlantAdded
+                ? "Already in Your Collection"
+                : !userToken
+                ? "Login to Add Plant"
+                : "Add to My Plants"}
+            </Text>
           </>
         )}
       </TouchableOpacity>
@@ -211,7 +225,7 @@ const styles = StyleSheet.create({
     bottom: 20,
     left: 20,
     right: 20,
-    backgroundColor: "#2E7D32", // Green color
+    backgroundColor: "#2E7D32",
     borderRadius: 25,
     paddingVertical: 15,
     flexDirection: "row",
@@ -228,6 +242,9 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
       },
     }),
+  },
+  disabledButton: {
+    backgroundColor: "#9E9E9E",
   },
   addButtonText: {
     color: "white",
