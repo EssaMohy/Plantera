@@ -18,6 +18,7 @@ import ProfileScreen from "../screens/ProfileScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 import { useAuth } from "../hooks/useAuth";
 import ProfileStack from "./ProfileStack";
+import CalendarScreen from "../screens/CalendarScreen";
 
 const Drawer = createDrawerNavigator();
 
@@ -145,7 +146,6 @@ const DrawerNavigator = () => {
         },
         headerTitleAlign: "center",
         headerLeft: () => <CustomDrawerButton navigation={navigation} />,
-        headerRight: () => <NotificationButton navigation={navigation} />,
         drawerActiveTintColor: "#2E7D32",
         drawerInactiveTintColor: "#525252",
         drawerStyle: {
@@ -169,8 +169,8 @@ const DrawerNavigator = () => {
             case "Profile":
               iconName = focused ? "person" : "person-outline";
               break;
-            case "Notifications":
-              iconName = focused ? "notifications" : "notifications-outline";
+            case "Calendar":
+              iconName = focused ? "calendar" : "calendar-outline";
               break;
             default:
               iconName = focused ? "help" : "help-outline";
@@ -191,9 +191,9 @@ const DrawerNavigator = () => {
         options={{ headerShown: false }}
       />
       <Drawer.Screen
-        name="Notifications"
-        component={NotificationsScreen}
-        options={{ title: "Notifications" }}
+        name="Calendar"
+        component={CalendarScreen}
+        options={{ title: "Calendar" }}
       />
     </Drawer.Navigator>
   );

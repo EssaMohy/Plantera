@@ -105,7 +105,6 @@ const TabNavigator = () => {
           headerRight: () => (
             <View style={styles.headerRightContainer}>
               <CalendarButton />
-              <NotificationButton />
             </View>
           ),
         })}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { ActivityIndicator, View, StyleSheet } from "react-native";
@@ -10,7 +10,10 @@ import VerificationScreen from "../screens/VerificationScreen";
 import ResetPasswordScreen from "../screens/ResetPasswordScreen";
 import { AuthProvider } from "../providers/AuthProvider";
 import { useAuth } from "../hooks/useAuth"; // Import directly from hooks
-
+import {
+  registerForPushNotificationsAsync,
+  requestPushNotificationPermission,
+} from "../utils/notifcation";
 const Stack = createStackNavigator();
 
 // Auth Navigator component with login-related screens
@@ -28,6 +31,20 @@ const AuthNavigator = () => (
 const AppContent = () => {
   // Get auth state directly from the hook
   const { isAuthenticated, isLoading } = useAuth();
+
+  useEffect(() => {
+    const registerForPushNotifications = async () => {
+      try {
+        const token = await registerForPushNotificationsAsync();
+        await requestPushNotificationPermission();
+        console.log("Push notification token:", token);
+      } catch (error) {
+        console.error("Error registering for push notifications:", error);
+      }
+    };
+
+    registerForPushNotifications();
+  }, []);
 
   if (isLoading) {
     return (

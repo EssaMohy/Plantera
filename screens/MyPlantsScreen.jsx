@@ -11,6 +11,7 @@ import {
   ImageBackground,
   Modal,
   TextInput,
+  Switch,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import LottieView from "lottie-react-native";
@@ -21,6 +22,7 @@ import {
   useSchedulePlantCare,
 } from "../hooks/myPlants";
 import { useAuth } from "../hooks/useAuth";
+import { scheduleNotification } from "../utils/notifcation";
 
 const backgroundImage = require("../assets/images/7.png");
 
@@ -35,6 +37,8 @@ const MyPlantsScreen = () => {
   const [selectedPlant, setSelectedPlant] = useState(null);
   const [wateringDays, setWateringDays] = useState("7");
   const [fertilizingDays, setFertilizingDays] = useState("30");
+  const [enableWatering, setEnableWatering] = useState(true);
+  const [enableFertilizing, setEnableFertilizing] = useState(true);
 
   const handleAddPlantsPress = () => {
     navigation.navigate("AllPlants");
@@ -78,26 +82,56 @@ const MyPlantsScreen = () => {
     setSelectedPlant(plant);
     setWateringDays(plant.wateringFrequency?.toString() || "7");
     setFertilizingDays(plant.fertilizingFrequency?.toString() || "30");
+    setEnableWatering(!!plant.wateringFrequency);
+    setEnableFertilizing(!!plant.fertilizingFrequency);
     setShowScheduleModal(true);
   };
 
   const confirmScheduleCare = () => {
-    if (!wateringDays && !fertilizingDays) {
-      Alert.alert("Error", "Please set at least one care schedule");
+    if (!enableWatering && !enableFertilizing) {
+      Alert.alert("Error", "Please select at least one care type");
       return;
     }
 
     schedulePlantCareMutation.mutate(
       {
         plantId: selectedPlant._id,
-        wateringFrequency: wateringDays ? parseInt(wateringDays) : null,
-        fertilizingFrequency: fertilizingDays
+        wateringFrequency: enableWatering ? parseInt(wateringDays) : null,
+        fertilizingFrequency: enableFertilizing
           ? parseInt(fertilizingDays)
           : null,
       },
       {
-        onSuccess: () => {
+        onSuccess: async (data) => {
           setShowScheduleModal(false);
+          console.log(data);
+
+          const careData = data?.data;
+
+          if (
+            enableWatering &&
+            wateringDays &&
+            careData?.watering?.nextWatering
+          ) {
+            await scheduleNotification({
+              title: "Watering Reminder",
+              body: `Time to water your ${selectedPlant.commonName}`,
+              ...careData.watering.nextWatering,
+            });
+          }
+
+          if (
+            enableFertilizing &&
+            fertilizingDays &&
+            careData?.fertilizing?.nextFertilizing
+          ) {
+            await scheduleNotification({
+              title: "Fertilizing Reminder",
+              body: `Time to fertilize your ${selectedPlant.commonName}`,
+              ...careData.fertilizing.nextFertilizing,
+            });
+          }
+
           Alert.alert(
             "Success",
             `Care schedule set for ${selectedPlant.commonName}`
@@ -123,71 +157,96 @@ const MyPlantsScreen = () => {
             Set Care Schedule for {selectedPlant?.commonName}
           </Text>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Water every (days):</Text>
-            <View style={styles.inputRow}>
-              <TouchableOpacity
-                style={styles.numberButton}
-                onPress={() =>
-                  setWateringDays((prev) =>
-                    Math.max(1, parseInt(prev || 0) - 1).toString()
-                  )
-                }
-              >
-                <Text style={styles.numberButtonText}>-</Text>
-              </TouchableOpacity>
-              <TextInput
-                style={styles.numberInput}
-                keyboardType="numeric"
-                value={wateringDays}
-                onChangeText={setWateringDays}
-                placeholder="7"
+          <View style={styles.toggleContainer}>
+            <View style={styles.toggleRow}>
+              <Text style={styles.toggleLabel}>Watering</Text>
+              <Switch
+                value={enableWatering}
+                onValueChange={setEnableWatering}
+                trackColor={{ false: "#767577", true: "#81b0ff" }}
+                thumbColor={enableWatering ? "#2E7D32" : "#f4f3f4"}
               />
-              <TouchableOpacity
-                style={styles.numberButton}
-                onPress={() =>
-                  setWateringDays((prev) =>
-                    (parseInt(prev || 0) + 1).toString()
-                  )
-                }
-              >
-                <Text style={styles.numberButtonText}>+</Text>
-              </TouchableOpacity>
+            </View>
+            <View style={styles.toggleRow}>
+              <Text style={styles.toggleLabel}>Fertilizing</Text>
+              <Switch
+                value={enableFertilizing}
+                onValueChange={setEnableFertilizing}
+                trackColor={{ false: "#767577", true: "#81b0ff" }}
+                thumbColor={enableFertilizing ? "#FF9800" : "#f4f3f4"}
+              />
             </View>
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Fertilize every (days):</Text>
-            <View style={styles.inputRow}>
-              <TouchableOpacity
-                style={styles.numberButton}
-                onPress={() =>
-                  setFertilizingDays((prev) =>
-                    Math.max(7, parseInt(prev || 0) - 7).toString()
-                  )
-                }
-              >
-                <Text style={styles.numberButtonText}>-</Text>
-              </TouchableOpacity>
-              <TextInput
-                style={styles.numberInput}
-                keyboardType="numeric"
-                value={fertilizingDays}
-                onChangeText={setFertilizingDays}
-                placeholder="30"
-              />
-              <TouchableOpacity
-                style={styles.numberButton}
-                onPress={() =>
-                  setFertilizingDays((prev) =>
-                    (parseInt(prev || 0) + 7).toString()
-                  )
-                }
-              >
-                <Text style={styles.numberButtonText}>+</Text>
-              </TouchableOpacity>
+          {enableWatering && (
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Water every (days):</Text>
+              <View style={styles.inputRow}>
+                <TouchableOpacity
+                  style={styles.numberButton}
+                  onPress={() =>
+                    setWateringDays((prev) =>
+                      Math.max(1, parseInt(prev || 0) - 1).toString()
+                    )
+                  }
+                >
+                  <Text style={styles.numberButtonText}>-</Text>
+                </TouchableOpacity>
+                <TextInput
+                  style={styles.numberInput}
+                  keyboardType="numeric"
+                  value={wateringDays}
+                  onChangeText={setWateringDays}
+                  placeholder="7"
+                />
+                <TouchableOpacity
+                  style={styles.numberButton}
+                  onPress={() =>
+                    setWateringDays((prev) =>
+                      (parseInt(prev || 0) + 1).toString()
+                    )
+                  }
+                >
+                  <Text style={styles.numberButtonText}>+</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          )}
+
+          {enableFertilizing && (
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Fertilize every (days):</Text>
+              <View style={styles.inputRow}>
+                <TouchableOpacity
+                  style={styles.numberButton}
+                  onPress={() =>
+                    setFertilizingDays((prev) =>
+                      Math.max(7, parseInt(prev || 0) - 7).toString()
+                    )
+                  }
+                >
+                  <Text style={styles.numberButtonText}>-</Text>
+                </TouchableOpacity>
+                <TextInput
+                  style={styles.numberInput}
+                  keyboardType="numeric"
+                  value={fertilizingDays}
+                  onChangeText={setFertilizingDays}
+                  placeholder="30"
+                />
+                <TouchableOpacity
+                  style={styles.numberButton}
+                  onPress={() =>
+                    setFertilizingDays((prev) =>
+                      (parseInt(prev || 0) + 7).toString()
+                    )
+                  }
+                >
+                  <Text style={styles.numberButtonText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
 
           <View style={styles.modalButtonContainer}>
             <TouchableOpacity
@@ -585,6 +644,19 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 20,
     textAlign: "center",
+  },
+  toggleContainer: {
+    marginBottom: 20,
+  },
+  toggleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  toggleLabel: {
+    fontSize: 16,
+    color: "#333",
   },
   inputContainer: {
     marginBottom: 20,

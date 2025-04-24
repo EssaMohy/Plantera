@@ -13,6 +13,7 @@ import ProfileScreen from "../screens/ProfileScreen";
 import EditProfileScreen from "../screens/EditProfileScreen";
 import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 import NotificationsSettingsScreen from "../screens/NotificatinsSettingsScreen";
+import CalendarScreen from "../screens/CalendarScreen";
 
 const Stack = createStackNavigator();
 
@@ -29,19 +30,15 @@ const ProfileStack = () => {
     </TouchableOpacity>
   );
 
-  // New notification button component
-  const NotificationButton = () => {
+  const CalendarButton = () => {
     return (
       <TouchableOpacity
         style={styles.notificationButton}
-        onPress={() => navigation.navigate("Notifications")}
-        testID="notification-button"
+        onPress={() => navigation.navigate("Calendar")}
+        testID="calendar-button"
       >
         <View style={styles.notificationIconContainer}>
-          <Ionicons name="notifications" size={24} color="#2E7D32" />
-          <View style={styles.notificationBadge}>
-            <Text style={styles.notificationBadgeText}>3</Text>
-          </View>
+          <Ionicons name="calendar" size={24} color="#2E7D32" />
         </View>
       </TouchableOpacity>
     );
@@ -80,7 +77,7 @@ const ProfileStack = () => {
           headerTintColor: "#2E7D32",
           headerTitleAlign: "center",
           headerLeft: () => <DrawerButton />,
-          headerRight: () => <NotificationButton />,
+          headerRight: () => <CalendarButton />,
         })}
       />
       <Stack.Screen
@@ -121,9 +118,10 @@ const ProfileStack = () => {
       />
 
       <Stack.Screen
-        name="Notifications Settings"
-        component={NotificationsSettingsScreen}
+        name="Calendar"
+        component={CalendarScreen}
         options={{
+          title: "Plant Care Calendar",
           headerTintColor: "#2E7D32",
           headerTitleStyle: {
             fontWeight: "bold",
