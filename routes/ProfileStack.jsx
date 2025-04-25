@@ -13,7 +13,6 @@ import ProfileScreen from "../screens/ProfileScreen";
 import EditProfileScreen from "../screens/EditProfileScreen";
 import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 import NotificationsSettingsScreen from "../screens/NotificatinsSettingsScreen";
-import CalendarScreen from "../screens/CalendarScreen";
 
 const Stack = createStackNavigator();
 
@@ -118,10 +117,9 @@ const ProfileStack = () => {
       />
 
       <Stack.Screen
-        name="Calendar"
-        component={CalendarScreen}
+        name="Notifications Settings"
+        component={NotificationsSettingsScreen}
         options={{
-          title: "Plant Care Calendar",
           headerTintColor: "#2E7D32",
           headerTitleStyle: {
             fontWeight: "bold",
