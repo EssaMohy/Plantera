@@ -12,23 +12,33 @@
       "backgroundColor": "#ffffff",
       "resizeMode": "contain"
     },
-
+    "plugins": ["expo-image-picker", "expo-notifications"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.essam74.plantarea",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCalendarsUsageDescription": "This app needs access to your calendar to manage plant care reminders",
-        "NSRemindersUsageDescription": "This app needs access to your reminders to manage plant care tasks"
+        "NSRemindersUsageDescription": "This app needs access to your reminders to manage plant care tasks",
+        "NSCameraUsageDescription": "We need access to your camera to let you take pictures of your plants.",
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to upload plant images.",
+        "NSUserTrackingUsageDescription": "We use this to send you important plant care notifications."
       }
     },
     "android": {
+      "package": "com.essam74.plantarea",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#ffffff",
-        "permissions": ["READ_CALENDAR", "WRITE_CALENDAR"]
+        "backgroundColor": "#ffffff"
       },
-      "package": "com.essam74.plantarea"
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_CALENDAR",
+        "WRITE_CALENDAR",
+        "RECEIVE_BOOT_COMPLETED"
+      ]
     },
     "web": {
       "favicon": "./assets/images/favicon.png"

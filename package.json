@@ -11,7 +11,7 @@
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
     "@gorhom/bottom-sheet": "^5.1.2",
-    "@react-native-async-storage/async-storage": "^1.23.1",
+    "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-community/masked-view": "^0.1.11",
     "@react-native-community/push-notification-ios": "^1.11.0",
     "@react-navigation/bottom-tabs": "^7.2.1",
@@ -35,12 +35,11 @@
     "expo-notifications": "~0.29.14",
     "expo-sensors": "~14.0.2",
     "expo-sharing": "~13.0.1",
-    "expo-splash-screen": "^0.29.24",
+    "expo-splash-screen": "~0.29.24",
     "expo-status-bar": "~2.0.1",
     "lottie-react-native": "7.1.0",
     "react": "18.3.1",
     "react-native": "0.76.9",
-    "react-native-blur": "^3.2.2",
     "react-native-gesture-handler": "~2.20.2",
     "react-native-modal": "^14.0.0-rc.0",
     "react-native-modalize": "^2.1.1",
@@ -50,7 +49,7 @@
     "react-native-screens": "~4.4.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0"
+    "@babel/core": "^7.25.2"
   },
   "private": true
 }
