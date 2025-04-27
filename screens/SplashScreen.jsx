@@ -1,19 +1,9 @@
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import { View, StyleSheet, Dimensions } from "react-native";
 import LottieView from "lottie-react-native";
 
-const SplashScreen = ({ navigation }) => {
+const SplashScreen = () => {
   const animationRef = useRef(null);
-
-  useEffect(() => {
-    animationRef.current?.play();
-
-    const timer = setTimeout(() => {
-      navigation.replace("Tabs");
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, [navigation]);
 
   return (
     <View style={styles.container}>
@@ -41,10 +31,9 @@ const styles = StyleSheet.create({
   animation: {
     width: 251,
     height: 251,
-    // Ensure the animation is perfectly centered
     position: "absolute",
-    top: height / 2 - 125, // Center vertically (half of screen height - half of animation height)
-    left: width / 2 - 125, // Center horizontally (half of screen width - half of animation width)
+    top: height / 2 - 125,
+    left: width / 2 - 125,
   },
 });
 

@@ -1,7 +1,7 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-import { ActivityIndicator, View, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import DrawerNavigator from "./DrawerNavigator";
 import LoginScreen from "../screens/LoginScreen";
 import SignupScreen from "../screens/SignupScreen";
@@ -9,11 +9,14 @@ import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import VerificationScreen from "../screens/VerificationScreen";
 import ResetPasswordScreen from "../screens/ResetPasswordScreen";
 import { AuthProvider } from "../providers/AuthProvider";
-import { useAuth } from "../hooks/useAuth"; // Import directly from hooks
+import { useAuth } from "../hooks/useAuth";
 import {
   registerForPushNotificationsAsync,
   requestPushNotificationPermission,
+  sendInstantNotification,
 } from "../utils/notifcation";
+import SplashScreen from "../screens/SplashScreen"; // Import the SplashScreen component
+
 const Stack = createStackNavigator();
 
 // Auth Navigator component with login-related screens
@@ -31,27 +34,19 @@ const AuthNavigator = () => (
 const AppContent = () => {
   // Get auth state directly from the hook
   const { isAuthenticated, isLoading } = useAuth();
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
-    const registerForPushNotifications = async () => {
-      try {
-        const token = await registerForPushNotificationsAsync();
-        await requestPushNotificationPermission();
-        console.log("Push notification token:", token);
-      } catch (error) {
-        console.error("Error registering for push notifications:", error);
-      }
-    };
+    // Set a timeout to hide the splash screen after 3 seconds
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2000);
 
-    registerForPushNotifications();
+    return () => clearTimeout(timer);
   }, []);
 
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2E7D32" />
-      </View>
-    );
+  if (showSplash || isLoading) {
+    return <SplashScreen />;
   }
 
   return (

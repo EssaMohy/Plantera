@@ -72,3 +72,20 @@ export async function requestPushNotificationPermission() {
   console.log("✅ Push notification permission granted");
   return finalStatus;
 }
+
+export async function sendInstantNotification({ title, body }) {
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body,
+        sound: true,
+        priority: Notifications.AndroidNotificationPriority.HIGH,
+      },
+      trigger: null,
+    });
+    console.log("✅ Instant notification sent!");
+  } catch (error) {
+    console.error("❌ Error sending instant notification:", error);
+  }
+}
