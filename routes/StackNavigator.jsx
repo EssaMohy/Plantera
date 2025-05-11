@@ -58,7 +58,24 @@ const StackNavigator = () => {
       <Stack.Screen
         name="Category"
         component={CategoryScreen}
-        options={{ headerShown: false }}
+        options={({ route }) => ({
+          title: route.params.type || "Category",
+          headerTintColor: "#2E7D32",
+          headerTitleStyle: {
+            fontWeight: "bold",
+            color: "#2E7D32",
+          },
+          headerTitleAlign: "center",
+          headerStyle: {
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0,
+          },
+          // Remove content padding/spacing below header
+          contentStyle: {
+            paddingTop: 0,
+          },
+        })}
       />
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen
