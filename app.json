@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Plantarea",
+    "name": "Plantera",
     "slug": "plantarea",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -12,11 +12,7 @@
       "backgroundColor": "#ffffff",
       "resizeMode": "contain"
     },
-    "plugins": [
-      "expo-calendar",
-      "expo-image-picker",
-      "expo-notifications"
-    ],
+    "plugins": ["expo-calendar", "expo-image-picker", "expo-notifications"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.essam74.plantarea",

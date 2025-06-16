@@ -59,7 +59,7 @@ const CustomDrawerContent = (props) => {
         {/* Header */}
         <View style={styles.drawerHeader}>
           <Ionicons name="leaf" size={32} color="#2E7D32" />
-          <Text style={styles.headerText}>Plantarea</Text>
+          <Text style={styles.headerText}>Plantera</Text>
         </View>
 
         {/* User Info */}

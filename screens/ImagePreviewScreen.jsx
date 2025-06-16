@@ -10,14 +10,14 @@ import {
   Share,
   Linking,
   Dimensions,
-  Platform,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as MediaLibrary from "expo-media-library";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
+import { ProgressBar } from "react-native-paper";
 
 const screen = Dimensions.get("window");
 
@@ -29,6 +29,7 @@ const ImagePreviewScreen = () => {
   const [isProcessing, setIsProcessing] = useState(true);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [hasSavePermission, setHasSavePermission] = useState(false);
+  const [result, setResult] = useState(null);
 
   useEffect(() => {
     Image.getSize(imageUri, (width, height) => {
@@ -44,32 +45,55 @@ const ImagePreviewScreen = () => {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsProcessing(false);
-    }, 2000);
-    return () => clearTimeout(timer);
+    const sendToServer = async () => {
+      const formData = new FormData();
+      formData.append("image", {
+        uri: imageUri,
+        type: "image/jpeg",
+        name: "plant.jpg",
+      });
+
+      try {
+        const endpoint =
+          action === "Identification"
+            ? "https://plant-api-service-ckf2f2fzabatezcu.uaenorth-01.azurewebsites.net/identify"
+            : "https://plant-api-service-ckf2f2fzabatezcu.uaenorth-01.azurewebsites.net/predictimage2";
+
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          body: formData,
+        });
+
+        const data = await response.json();
+        console.log("API Response:", data);
+        setResult(data);
+      } catch (error) {
+        console.error("API Error:", error);
+        Alert.alert("Error", "Failed to get prediction from the server.");
+      } finally {
+        setIsProcessing(false);
+      }
+    };
+
+    sendToServer();
   }, []);
 
   const handleSaveImage = async () => {
     try {
       if (!hasSavePermission) {
-        Alert.alert(
-          "Permission Required",
-          "Need media library permissions to save photos",
-          [
-            { text: "Cancel", style: "cancel" },
-            { text: "Open Settings", onPress: () => Linking.openSettings() },
-          ]
-        );
+        Alert.alert("Permission Required", "Enable media access in settings.");
         return;
       }
 
       const asset = await MediaLibrary.createAssetAsync(imageUri);
       await MediaLibrary.createAlbumAsync("PlantApp", asset, false);
-      Alert.alert("Success", "Image saved to your photos!");
+      Alert.alert("Success", "Image saved to your gallery.");
     } catch (error) {
       console.error("Save Error:", error);
-      Alert.alert("Error", "Failed to save image. Please try again.");
+      Alert.alert("Error", "Failed to save image.");
     }
   };
 
@@ -94,18 +118,32 @@ const ImagePreviewScreen = () => {
     }
   };
 
+  const translateDisease = (label) => {
+    const dictionary = {
+      "Powdery Mildew": "Powdery Mildew",
+      "Leaf Spot": "Leaf Spot",
+      Rust: "Rust",
+      Blight: "Blight",
+      Healthy: "Healthy",
+      bercak_daun: "Leaf Spot",
+      defisiensi_kalsium: "Calcium Deficiency",
+      hangus_daun: "Scorched Leaves",
+      hawar_daun: "Leaf Blight",
+      mosaik_vena_kuning: "Yellow Vein Mosaic",
+      virus_kuning_keriting: "Curly Yellow Virus",
+    };
+    return dictionary[label] || label;
+  };
+
   return (
     <View style={styles.container}>
-      {/* Background with gradient that matches the HomeScreen design */}
       <LinearGradient
         colors={["#F5F5F5", "#E8F5E9"]}
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Optional: Small plant pattern background */}
       <View style={styles.patternBackground} />
 
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>
           {action === "Identification" ? "Plant Scan" : "Disease Scan"}
@@ -147,11 +185,44 @@ const ImagePreviewScreen = () => {
             <Text style={styles.resultTitle}>
               {action === "Identification" ? "IDENTIFIED" : "DIAGNOSIS"}
             </Text>
-            <Text style={styles.resultText}>
-              {action === "Identification"
-                ? "Monstera Deliciosa (Swiss Cheese Plant)"
-                : "Possible Powdery Mildew (70% confidence)"}
-            </Text>
+
+            {action === "Identification" ? (
+              result && result.length > 0 ? (
+                <View style={styles.resultItem}>
+                  <Text style={styles.resultItemText}>
+                    {result[0].class_name}
+                  </Text>
+                  <ProgressBar
+                    progress={result[0].confidence}
+                    color="#2E7D32"
+                    style={{ height: 8, borderRadius: 4, marginTop: 6 }}
+                  />
+                  <Text style={styles.confidenceText}>
+                    {(result[0].confidence * 100).toFixed(1)}%
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.resultText}>No prediction returned.</Text>
+              )
+            ) : result && Array.isArray(result) && result.length > 0 ? (
+              result.map((item, index) => (
+                <View key={index} style={styles.resultItem}>
+                  <Text style={styles.resultItemText}>
+                    🦠 {translateDisease(item.class)}
+                  </Text>
+                  <ProgressBar
+                    progress={item.confidence}
+                    color="#FF6B6B"
+                    style={{ height: 8, borderRadius: 4, marginTop: 6 }}
+                  />
+                  <Text style={styles.confidenceText}>
+                    {(item.confidence * 100).toFixed(1)}%
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.resultText}>No disease detected.</Text>
+            )}
           </Animated.View>
         )}
       </Animated.View>
@@ -185,17 +256,12 @@ const ImagePreviewScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFF",
-    position: "relative",
-  },
+  container: { flex: 1, backgroundColor: "#FFF", position: "relative" },
   patternBackground: {
     position: "absolute",
     width: screen.width,
     height: screen.height,
     opacity: 0.05,
-    // You could add a pattern image here if you have one
   },
   header: {
     flexDirection: "row",
@@ -205,55 +271,59 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     marginBottom: 10,
   },
-  backButton: {
-    padding: 6,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#2E7D32",
-  },
+  title: { fontSize: 20, fontWeight: "bold", color: "#2E7D32" },
   card: {
     margin: 16,
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 16,
-    alignItems: "center",
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  image: {
-    width: "100%",
-    borderRadius: 12,
-  },
-  sourceText: {
-    marginTop: 8,
-    fontSize: 12,
-    color: "#777",
-  },
-  processingContainer: {
-    marginTop: 24,
-    alignItems: "center",
-  },
-  processingText: {
-    marginTop: 12,
-    color: "#444",
-  },
+  image: { width: "100%", borderRadius: 12 },
+  sourceText: { marginTop: 8, fontSize: 12, color: "#777" },
+  processingContainer: { marginTop: 24, alignItems: "center" },
+  processingText: { marginTop: 12, color: "#444" },
   resultTitle: {
     marginTop: 20,
     fontSize: 14,
     fontWeight: "bold",
     color: "#2E7D32",
     letterSpacing: 1,
+    alignSelf: "flex-start",
   },
   resultText: {
-    fontSize: 16,
+    fontSize: 14,
     textAlign: "center",
     marginTop: 4,
     color: "#333",
+  },
+  resultItem: {
+    backgroundColor: "#E8F5E9",
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 12,
+    width: "100%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  resultItemText: {
+    fontSize: 14,
+    color: "#2E7D32",
+    fontWeight: "500",
+    textAlign: "left",
+  },
+  confidenceText: {
+    marginTop: 4,
+    fontSize: 13,
+    color: "#555",
+    alignSelf: "flex-end",
   },
   floatingButtons: {
     position: "absolute",

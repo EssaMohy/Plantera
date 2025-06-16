@@ -105,7 +105,7 @@ const LoginScreen = ({ navigation }) => {
           <View style={styles.content}>
             <View style={styles.logoContainer}>
               <Ionicons name="leaf" size={60} color="#2E7D32" />
-              <Text style={styles.logoText}>Plantarea</Text>
+              <Text style={styles.logoText}>Plantera</Text>
             </View>
 
             <View style={styles.formContainer}>
