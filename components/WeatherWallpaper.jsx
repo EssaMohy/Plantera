@@ -1,52 +1,58 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ImageBackground } from 'react-native';
-import * as Location from 'expo-location';
-import LottieView from 'lottie-react-native';
-import { useColorScheme } from 'react-native';
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  ImageBackground,
+} from "react-native";
+import * as Location from "expo-location";
+import LottieView from "lottie-react-native";
+import { useColorScheme } from "react-native";
 
 const getBackgroundTheme = (weather, hour) => {
   const isDay = hour >= 6 && hour < 18;
 
-  if (weather.includes('Cloud')) return isDay ? 'cloudy_day' : 'cloudy_night';
-  if (weather.includes('Clear')) return isDay ? 'sunny' : 'night';
-  if (weather.includes('Rain')) return isDay ? 'rain_day' : 'rain_night';
+  if (weather.includes("Cloud")) return isDay ? "cloudy_day" : "cloudy_night";
+  if (weather.includes("Clear")) return isDay ? "sunny" : "night";
+  if (weather.includes("Rain")) return isDay ? "rain_day" : "rain_night";
 
-  return isDay ? 'sunny' : 'night';
+  return isDay ? "sunny" : "night";
 };
 
 const animationSources = {
-  sunny: require('../assets/animations/sunny5.json'),
-  night: require('../assets/animations/night2.json'),
-  cloudy_day: require('../assets/animations/cloudy_day3.json'),
-  cloudy_night: require('../assets/animations/cloudy_night.json'),
-  rain_day: require('../assets/animations/rainy_day.json'),
-  rain_night: require('../assets/animations/rainy_day2.json'),
+  sunny: require("../assets/animations/sunny5.json"),
+  night: require("../assets/animations/night2.json"),
+  cloudy_day: require("../assets/animations/cloudy_day3.json"),
+  cloudy_night: require("../assets/animations/cloudy_night.json"),
+  rain_day: require("../assets/animations/rainy_day.json"),
+  rain_night: require("../assets/animations/rainy_day2.json"),
 };
 
 const backgroundImages = {
-  sunny: require('../assets/images/2.jpg'),
-  night: require('../assets/images/night.jpg'),
-  cloudy_day: require('../assets/images/clouds2.jpg'),
-  cloudy_night: require('../assets/images/night.jpg'),
-  rain_day: require('../assets/images/clouds2.jpg'),
-  rain_night: require('../assets/images/night.jpg'),
+  sunny: require("../assets/images/sun5.jpg"),
+  night: require("../assets/images/night.jpg"),
+  cloudy_day: require("../assets/images/clouds2.jpg"),
+  cloudy_night: require("../assets/images/night.jpg"),
+  rain_day: require("../assets/images/clouds2.jpg"),
+  rain_night: require("../assets/images/night.jpg"),
 };
 
 const animationSizes = {
   //sunny: { width: 210, height: 170  }
   //sunny: { width: 500, height: 200 } with animation night
   sunny: { width: 210, height: 130 },
-  night: { width: 10000, height: 200},
+  night: { width: 10000, height: 200 },
   cloudy_day: { width: 200, height: 160 },
-  cloudy_night: {width: 500, height: 200},
+  cloudy_night: { width: 500, height: 200 },
   rain_day: { width: 200, height: 160 },
   rain_night: { width: 500, height: 210 },
 };
 
 const animationPositions = {
-    //sunny: { right: 6 },
+  //sunny: { right: 6 },
 
-  sunny: {  right: 6 },
+  sunny: { right: 6 },
   night: { right: 2 },
   cloudy_day: { right: 10 },
   cloudy_night: { right: 25 },
@@ -56,11 +62,10 @@ const animationPositions = {
 
 export default function WeatherWallpaper() {
   const [weatherData, setWeatherData] = useState(null);
-  const [background, setBackground] = useState('sunny');
+  const [background, setBackground] = useState("sunny");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
- const textColor = 'black';
-
+  const textColor = "black";
 
   useEffect(() => {
     let isMounted = true;
@@ -68,18 +73,19 @@ export default function WeatherWallpaper() {
     const fetchWeather = async () => {
       try {
         let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') throw new Error('Location permission denied');
+        if (status !== "granted") throw new Error("Location permission denied");
 
         let location = await Location.getCurrentPositionAsync({});
         const { latitude, longitude } = location.coords;
 
-        const apiKey = 'da1b90b603b1d8e9ad1b06829470209f';
+        const apiKey = "da1b90b603b1d8e9ad1b06829470209f";
         const response = await fetch(
           `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&units=metric&appid=${apiKey}`
         );
 
         const data = await response.json();
-        if (data.cod !== 200) throw new Error(data.message || 'Failed to fetch weather data');
+        if (data.cod !== 200)
+          throw new Error(data.message || "Failed to fetch weather data");
 
         if (isMounted) {
           const hour = new Date().getHours();
@@ -95,18 +101,20 @@ export default function WeatherWallpaper() {
         }
       } catch (err) {
         if (isMounted) {
-          setError(err.message || 'Failed to load weather');
+          setError(err.message || "Failed to load weather");
           setLoading(false);
 
           const hour = new Date().getHours();
           const isDay = hour >= 6 && hour < 18;
-          setBackground(isDay ? 'sunny' : 'night');
+          setBackground(isDay ? "sunny" : "night");
         }
       }
     };
 
     fetchWeather();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   if (loading) {
@@ -125,7 +133,7 @@ export default function WeatherWallpaper() {
         style={styles.backgroundImage}
         resizeMode="cover"
       >
-        {background !== 'night' && (
+        {background !== "night" && (
           <LottieView
             source={animationSources[background]}
             autoPlay
@@ -143,11 +151,17 @@ export default function WeatherWallpaper() {
 
         <View style={styles.infoOverlay}>
           {error ? (
-            <Text style={[styles.errorText, { color: textColor }]}>{error}</Text>
+            <Text style={[styles.errorText, { color: textColor }]}>
+              {error}
+            </Text>
           ) : (
             <>
-              <Text style={[styles.city, { color: textColor }]}>{weatherData.city}</Text>
-              <Text style={[styles.temp, { color: textColor }]}>{weatherData.temp}°C</Text>
+              <Text style={[styles.city, { color: textColor }]}>
+                {weatherData.city}
+              </Text>
+              <Text style={[styles.temp, { color: textColor }]}>
+                {weatherData.temp}°C
+              </Text>
             </>
           )}
         </View>
@@ -159,19 +173,19 @@ export default function WeatherWallpaper() {
 const styles = StyleSheet.create({
   container: {
     height: 200,
-    width: '100%',
+    width: "100%",
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 16,
   },
   backgroundImage: {
     flex: 1,
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
   },
   backgroundAnimation: {
-    position: 'absolute',
+    position: "absolute",
     top: 1,
     zIndex: 1,
   },
@@ -182,23 +196,22 @@ const styles = StyleSheet.create({
   city: {
     fontSize: 24,
     left: 20,
-    color:'black'
+    color: "black",
   },
   temp: {
     fontSize: 24,
     left: 20,
-    fontWeight: 'bold',
-    color:'black'
-
+    fontWeight: "bold",
+    color: "black",
   },
   errorText: {
     fontSize: 16,
   },
   loadingContainer: {
     height: 200,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
     borderRadius: 12,
     marginBottom: 16,
   },
