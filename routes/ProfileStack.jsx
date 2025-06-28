@@ -13,6 +13,9 @@ import ProfileScreen from "../screens/ProfileScreen";
 import EditProfileScreen from "../screens/EditProfileScreen";
 import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 import NotificationsSettingsScreen from "../screens/NotificatinsSettingsScreen";
+import AboutScreen from "../screens/AboutScreen";
+import FAQScreen from "../screens/FAQScreen";
+import ContactSupportScreen from "../screens/ContactSupportScreen";
 
 const Stack = createStackNavigator();
 
@@ -120,6 +123,61 @@ const ProfileStack = () => {
         name="Notifications Settings"
         component={NotificationsSettingsScreen}
         options={{
+          headerTintColor: "#2E7D32",
+          headerTitleStyle: {
+            fontWeight: "bold",
+            color: "#2E7D32",
+          },
+          headerTitleAlign: "center",
+          headerStyle: {
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0,
+          },
+        }}
+      />
+
+      <Stack.Screen
+        name="About"
+        component={AboutScreen}
+        options={{
+          title: "About Plantera",
+          headerTintColor: "#2E7D32",
+          headerTitleStyle: {
+            fontWeight: "bold",
+            color: "#2E7D32",
+          },
+          headerTitleAlign: "center",
+          headerStyle: {
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0,
+          },
+        }}
+      />
+      <Stack.Screen
+        name="FAQ"
+        component={FAQScreen}
+        options={{
+          title: "Frequently Asked Questions",
+          headerTintColor: "#2E7D32",
+          headerTitleStyle: {
+            fontWeight: "bold",
+            color: "#2E7D32",
+          },
+          headerTitleAlign: "center",
+          headerStyle: {
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0,
+          },
+        }}
+      />
+      <Stack.Screen
+        name="Contact Support"
+        component={ContactSupportScreen}
+        options={{
+          title: "Contact Support",
           headerTintColor: "#2E7D32",
           headerTitleStyle: {
             fontWeight: "bold",

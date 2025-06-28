@@ -165,10 +165,7 @@ const ProfileScreen = ({ navigation }) => {
         <TouchableOpacity
           style={styles.option}
           onPress={() => {
-            Alert.alert(
-              "About Plantarea",
-              "Plantarea v1.0.0 - A plant care and identification application."
-            );
+            navigation.navigate("About");
           }}
         >
           <Ionicons
@@ -177,17 +174,14 @@ const ProfileScreen = ({ navigation }) => {
             color="#2E7D32"
             style={styles.optionIcon}
           />
-          <Text style={styles.optionText}>About Plantarea</Text>
+          <Text style={styles.optionText}>About Plantera</Text>
           <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.option}
           onPress={() => {
-            Alert.alert(
-              "Coming Soon",
-              "FAQ section will be available in a future update."
-            );
+            navigation.navigate("FAQ");
           }}
         >
           <Ionicons
@@ -203,10 +197,7 @@ const ProfileScreen = ({ navigation }) => {
         <TouchableOpacity
           style={styles.option}
           onPress={() => {
-            Alert.alert(
-              "Contact Support",
-              "For any issues or questions, please email us at support@plantarea.com"
-            );
+            navigation.navigate("Contact Support");
           }}
         >
           <Ionicons

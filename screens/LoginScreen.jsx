@@ -104,7 +104,7 @@ const LoginScreen = ({ navigation }) => {
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.content}>
             <View style={styles.logoContainer}>
-              <Ionicons name="leaf" size={60} color="#2E7D32" />
+              <Ionicons name="leaf-outline" size={60} color="#2E7D32" />
               <Text style={styles.logoText}>Plantera</Text>
             </View>
 
