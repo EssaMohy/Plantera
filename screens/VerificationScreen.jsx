@@ -12,10 +12,7 @@ import {
   Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import axios from "axios";
-
-const API_URL =
-  "https://labour-jewell-plant-area-6cb70f30.koyeb.app/plantarea/api";
+import axiosInstance from "../api/axiosInstance";
 
 const screenWidth = Dimensions.get("window").width;
 const otpBoxSize = (screenWidth - 60) / 6 - 5; // spacing between inputs
@@ -69,7 +66,7 @@ const VerificationScreen = ({ navigation, route }) => {
     setIsLoading(true);
 
     try {
-      await axios.post(`${API_URL}/auth/forgotPassword`, { email });
+      await axiosInstance.post("/auth/forgot-password", { email });
       setIsLoading(false);
       Alert.alert(
         "Success",

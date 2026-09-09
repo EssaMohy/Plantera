@@ -11,10 +11,7 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import axios from "axios";
-
-const API_URL =
-  "https://labour-jewell-plant-area-6cb70f30.koyeb.app/plantarea/api";
+import axiosInstance from "../api/axiosInstance";
 
 const ResetPasswordScreen = ({ navigation, route }) => {
   const { email, otp } = route.params;
@@ -66,7 +63,7 @@ const ResetPasswordScreen = ({ navigation, route }) => {
 
     try {
       // Send request to reset password with email, OTP and new password
-      const response = await axios.post(`${API_URL}/auth/resetPassword`, {
+      const response = await axiosInstance.post("/auth/reset-password", {
         email,
         otp,
         password,

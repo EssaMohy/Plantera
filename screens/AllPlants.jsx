@@ -115,7 +115,7 @@ const AllPlants = ({ navigation }) => {
 
   const renderPlant = (itemData) => (
     <PlantCard
-      image={itemData.item.image}
+      imageUrl={itemData.item.imageUrl}
       commonName={itemData.item.commonName}
       scientificName={itemData.item.scientificName}
       onPress={() =>
@@ -212,7 +212,7 @@ const AllPlants = ({ navigation }) => {
       ) : (
         <FlatList
           data={filteredPlants}
-          keyExtractor={(plant) => plant._id}
+          keyExtractor={(plant) => plant.id.toString()}
           renderItem={renderPlant}
           numColumns={2}
           contentContainerStyle={styles.listContainer}

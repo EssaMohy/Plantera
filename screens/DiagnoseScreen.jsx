@@ -38,7 +38,7 @@ const DiagnoseScreen = () => {
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
 
-    const otherNamesMatch = disease.otherNames.some((otherName) =>
+    const otherNamesMatch = disease.otherNames?.some((otherName) =>
       otherName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -51,6 +51,7 @@ const DiagnoseScreen = () => {
 
   const renderDisease = ({ item }) => (
     <DiseaseCard
+      imageUrl={item.imageUrl}
       image={item.image}
       name={item.name}
       onPress={() => handleDiseasePress(item)}
@@ -70,7 +71,7 @@ const DiagnoseScreen = () => {
       {/* Disease List */}
       <FlatList
         data={filteredDiseases}
-        keyExtractor={(disease) => disease._id}
+        keyExtractor={(disease) => (disease.id || disease._id).toString()}
         renderItem={renderDisease}
         numColumns={2}
         contentContainerStyle={styles.listContainer}

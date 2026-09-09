@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,19 +8,43 @@ import {
   TouchableOpacity,
 } from "react-native";
 
-const PlantCard = ({ image, commonName, scientificName, onPress }) => {
+const PlantCard = ({
+  image,
+  imageUrl,
+  commonName,
+  scientificName,
+  onPress,
+}) => {
+  const displayImage = imageUrl || image;
+  const [failed, setFailed] = useState(false);
+
   return (
     <View style={styles.card}>
       <TouchableOpacity activeOpacity={0.7} onPress={onPress}>
         <View style={styles.imageContainer}>
-          <Image
-            source={{ uri: image }}
-            style={styles.image}
-            resizeMode="cover"
-            onError={(e) =>
-              console.log("Failed to load image:", e.nativeEvent.error)
-            }
-          />
+          {displayImage && !failed ? (
+            <Image
+              source={{
+                uri: displayImage,
+                headers: {
+                  // Wikimedia blocks requests without a descriptive User-Agent.
+                  // Swap in your actual app name/contact per their policy:
+                  // https://meta.wikimedia.org/wiki/User-Agent_policy
+                  "User-Agent": "PlantApp/1.0 (contact@yourapp.com)",
+                },
+              }}
+              style={styles.image}
+              resizeMode="cover"
+              onError={(e) => {
+                console.log("Failed to load image:", e.nativeEvent.error);
+                setFailed(true);
+              }}
+            />
+          ) : (
+            <View style={styles.placeholder}>
+              <Text style={styles.placeholderText}>🌿</Text>
+            </View>
+          )}
         </View>
         <View style={styles.textContainer}>
           <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
@@ -37,7 +61,7 @@ const PlantCard = ({ image, commonName, scientificName, onPress }) => {
 
 const styles = StyleSheet.create({
   card: {
-    width: Dimensions.get("window").width / 2 - 20, // Responsive width
+    width: Dimensions.get("window").width / 2 - 20,
     backgroundColor: "#FFFFFF",
     borderRadius: 15,
     margin: 10,
@@ -50,7 +74,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     width: "100%",
     height: 120,
-    backgroundColor: "#E0E0E0", // Fallback background color
+    backgroundColor: "#E0E0E0",
     justifyContent: "center",
     alignItems: "center",
     borderTopLeftRadius: 15,
@@ -60,7 +84,16 @@ const styles = StyleSheet.create({
   image: {
     width: "100%",
     height: "100%",
-    resizeMode: "cover",
+  },
+  placeholder: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#E8F5E9",
+  },
+  placeholderText: {
+    fontSize: 32,
   },
   textContainer: {
     padding: 10,

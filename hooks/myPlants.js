@@ -1,38 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import axiosInstance from "../api/axiosInstance";
 import { useAuth } from "./useAuth";
-
-const API_URL =
-  "https://labour-jewell-plant-area-6cb70f30.koyeb.app/plantarea/api";
-
-const getAuthToken = async () => {
-  try {
-    return await AsyncStorage.getItem("userToken");
-  } catch (error) {
-    console.error("Error getting auth token:", error);
-    return null;
-  }
-};
 
 const fetchMyPlants = async () => {
   try {
-    const token = await getAuthToken();
-    if (!token) {
-      throw new Error("Authentication required");
-    }
-
-    const { data } = await axios.get(`${API_URL}/my-plants`, {
-      headers: { Authorization: `Bearer ${token}` },
+    const { data } = await axiosInstance.get("/my-plants", {
+      params: { limit: 100 }
     });
 
-    if (!data?.data?.myPlants) {
+    if (!data?.data) {
       throw new Error("Invalid response format");
     }
-    return data.data.myPlants;
+    return data.data; // Paginated envelope
   } catch (error) {
     console.error("Error fetching my plants:", error);
-    // Handle the specific localStorage error
     if (error.message && error.message.includes("localStorage")) {
       throw new Error("Storage API is not available");
     }
@@ -49,28 +30,19 @@ export const useMyPlants = () => {
     queryKey: ["myPlants"],
     queryFn: fetchMyPlants,
     enabled: !!userToken,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5,
     retry: 2,
   });
 };
 
 const addToMyPlants = async (plantId) => {
-  if (!plantId || typeof plantId !== "string") {
+  if (!plantId || typeof plantId !== "number") {
     throw new Error("Invalid plant ID");
   }
 
   try {
-    const token = await getAuthToken();
-    if (!token) {
-      throw new Error("Authentication required");
-    }
-
-    const { data } = await axios.post(
-      `${API_URL}/my-plants`,
-      { plantId }, // Just send plantId, no scheduling data
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    return data;
+    const { data } = await axiosInstance.post("/my-plants", { plantId });
+    return data.data.myPlant;
   } catch (error) {
     console.error("Error adding plant:", error);
     throw new Error(
@@ -79,24 +51,16 @@ const addToMyPlants = async (plantId) => {
   }
 };
 
-const removeFromMyPlants = async (plantId) => {
-  if (!plantId || typeof plantId !== "string") {
+const removeFromMyPlants = async (myPlantId) => {
+  if (!myPlantId || typeof myPlantId !== "number") {
     throw new Error("Invalid plant ID");
   }
 
   try {
-    const token = await getAuthToken();
-    if (!token) {
-      throw new Error("Authentication required");
-    }
-
-    const { data } = await axios.delete(`${API_URL}/my-plants/${plantId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return data;
+    const { data } = await axiosInstance.delete(`/my-plants/${myPlantId}`);
+    return data.data;
   } catch (error) {
     console.error("Error removing plant:", error);
-    // Handle the specific localStorage error
     if (error.message && error.message.includes("localStorage")) {
       throw new Error("Storage API is not available");
     }
@@ -134,75 +98,48 @@ export const useRemoveFromMyPlants = () => {
   });
 };
 
-// Add to myPlants.js
-const schedulePlantCare = async ({
-  plantId,
-  wateringFrequency,
-  fertilizingFrequency,
-}) => {
+const waterPlant = async (myPlantId) => {
   try {
-    const token = await getAuthToken();
-    if (!token) throw new Error("Authentication required");
-
-    const { data } = await axios.patch(
-      `${API_URL}/my-plants/${plantId}/schedule`,
-      { wateringFrequency, fertilizingFrequency },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    return data;
+    const { data } = await axiosInstance.post(`/my-plants/${myPlantId}/water`);
+    return data.data.myPlant;
   } catch (error) {
-    console.error("Error scheduling plant care:", error);
+    console.error("Error watering plant:", error);
     throw new Error(
-      error.response?.data?.message ||
-        error.message ||
-        "Failed to schedule care"
+      error.response?.data?.message || error.message || "Failed to water plant"
     );
   }
 };
 
-export const useSchedulePlantCare = () => {
+export const useWaterPlant = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: schedulePlantCare,
+    mutationFn: waterPlant,
     onSuccess: () => {
       queryClient.invalidateQueries(["myPlants"]);
     },
   });
 };
 
-// Add to myPlants.js
-const schedulePlantCareNotification = async ({ plantId, type, days }) => {
+const fertilizePlant = async (myPlantId) => {
   try {
-    const token = await getAuthToken();
-    if (!token) throw new Error("Authentication required");
-
-    const { data } = await axios.post(
-      `${API_URL}/notifications/schedule`,
-      {
-        plantId,
-        type, // 'watering' or 'fertilizing'
-        days,
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    return data;
+    const { data } = await axiosInstance.post(`/my-plants/${myPlantId}/fertilize`);
+    return data.data.myPlant;
   } catch (error) {
-    console.error("Error scheduling notification:", error);
+    console.error("Error fertilizing plant:", error);
     throw new Error(
-      error.response?.data?.message || "Failed to schedule notification"
+      error.response?.data?.message || error.message || "Failed to fertilize plant"
     );
   }
 };
 
-export const useSchedulePlantCareNotification = () => {
+export const useFertilizePlant = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: schedulePlantCareNotification,
+    mutationFn: fertilizePlant,
     onSuccess: () => {
       queryClient.invalidateQueries(["myPlants"]);
-      queryClient.invalidateQueries(["upcomingTasks"]);
     },
   });
 };

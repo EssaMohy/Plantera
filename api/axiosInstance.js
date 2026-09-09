@@ -2,7 +2,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const axiosInstance = axios.create({
-  baseURL: "https://labour-jewell-plant-area-6cb70f30.koyeb.app/plantarea/api",
+  baseURL: "https://api.plantera.dev/api/v1",
 });
 
 // Add request interceptor to attach the JWT token to all requests

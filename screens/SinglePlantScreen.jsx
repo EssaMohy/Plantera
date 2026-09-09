@@ -16,27 +16,33 @@ import Icon from "react-native-vector-icons/Ionicons";
 import CareGuideCard from "../components/CareGuideCard";
 import { useAddToMyPlants, useMyPlants } from "../hooks/myPlants";
 import { useAuth } from "../hooks/useAuth";
+import { usePlantById } from "../hooks/plants";
 
 const { width } = Dimensions.get("screen");
 
 const SinglePlantScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { plant } = route.params;
+  const { plant: initialPlant } = route.params;
   const { userToken } = useAuth();
+
+  // Fetch full plant details by ID
+  const { data: fullPlant, isLoading } = usePlantById(initialPlant.id || initialPlant._id);
+  const plant = fullPlant || initialPlant;
 
   // Get user's plants
   const { data: myPlants } = useMyPlants();
   const addToMyPlantsMutation = useAddToMyPlants();
 
   // Check if plant is already in user's collection
+  const plantId = plant.id || plant._id;
   const isPlantAdded = myPlants?.some(
-    (item) => item.plant?._id === plant._id || item._id === plant._id
+    (item) => item.plant?.id === plantId || item.plant?._id === plantId
   );
 
   const handleAddToMyPlants = () => {
-    addToMyPlantsMutation.mutate(plant._id, {
-      onSuccess: (data) => {
+    addToMyPlantsMutation.mutate(plantId, {
+      onSuccess: () => {
         Alert.alert("Success", `${plant.commonName} added to your plants!`, [
           {
             text: "OK",
@@ -54,10 +60,22 @@ const SinglePlantScreen = () => {
     });
   };
 
+  if (isLoading && !fullPlant) {
+    return (
+      <View style={[styles.container, styles.center]}>
+        <ActivityIndicator size="large" color="#2E7D32" />
+      </View>
+    );
+  }
+
+  const displayImage = plant.imageUrl || plant.image;
+
   return (
     <View style={styles.container}>
       {/* Plant Image */}
-      <Image source={{ uri: plant.image }} style={styles.plantImage} />
+      {displayImage && (
+        <Image source={{ uri: displayImage }} style={styles.plantImage} />
+      )}
       {/* Back Button */}
       <TouchableOpacity
         onPress={() => navigation.goBack()}
@@ -75,13 +93,13 @@ const SinglePlantScreen = () => {
 
           <Text style={styles.sectionTitle}>Scientific Classification</Text>
           <Text style={styles.detailText}>
-            <Text style={styles.boldText}>Family:</Text> {plant.Family}
+            <Text style={styles.boldText}>Family:</Text> {plant.family || plant.Family}
           </Text>
           <Text style={styles.detailText}>
-            <Text style={styles.boldText}>Order:</Text> {plant.Order}
+            <Text style={styles.boldText}>Order:</Text> {plant.order || plant.Order}
           </Text>
           <Text style={styles.detailText}>
-            <Text style={styles.boldText}>Kingdom:</Text> {plant.Kingdom}
+            <Text style={styles.boldText}>Kingdom:</Text> {plant.kingdom || plant.Kingdom}
           </Text>
 
           <View style={styles.divider} />
@@ -92,7 +110,7 @@ const SinglePlantScreen = () => {
           <View style={styles.divider} />
 
           <Text style={styles.sectionTitle}>How to Grow</Text>
-          <Text style={styles.text}>{plant.HowToGrow}</Text>
+          <Text style={styles.text}>{plant.howToGrow || plant.HowToGrow}</Text>
 
           <View style={styles.divider} />
 
@@ -100,17 +118,17 @@ const SinglePlantScreen = () => {
           <CareGuideCard
             iconName="thermometer"
             title="Temperature"
-            description={plant.Temperature}
+            description={plant.temperature || plant.Temperature}
           />
           <CareGuideCard
             iconName="white-balance-sunny"
             title="Light"
-            description={plant.Light}
+            description={plant.light || plant.Light}
           />
           <CareGuideCard
             iconName="water"
             title="Water"
-            description={plant.Water}
+            description={plant.water || plant.Water}
           />
           <CareGuideCard
             iconName="skull-outline"
@@ -245,6 +263,10 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     backgroundColor: "#9E9E9E",
+  },
+  center: {
+    justifyContent: "center",
+    alignItems: "center",
   },
   addButtonText: {
     color: "white",

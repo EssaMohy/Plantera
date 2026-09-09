@@ -17,6 +17,7 @@ import { useAuth } from "../hooks/useAuth";
 const SignupScreen = ({ navigation }) => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -33,7 +34,7 @@ const SignupScreen = ({ navigation }) => {
     setError(null);
 
     // Basic validation
-    if (!firstName || !lastName || !email || !password) {
+    if (!firstName || !lastName || !username || !email || !password) {
       setLocalError("Please fill in all fields");
       return;
     }
@@ -49,7 +50,7 @@ const SignupScreen = ({ navigation }) => {
     }
 
     try {
-      const result = await register(firstName, lastName, email, password);
+      const result = await register(firstName, lastName, username, email, password);
 
       if (!result.success) {
         if (result.error) {
@@ -130,6 +131,22 @@ const SignupScreen = ({ navigation }) => {
                       autoCapitalize="words"
                     />
                   </View>
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Ionicons
+                    name="at-outline"
+                    size={20}
+                    color="#525252"
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Username"
+                    value={username}
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
+                  />
                 </View>
 
                 <View style={styles.inputContainer}>

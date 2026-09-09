@@ -8,19 +8,26 @@ import {
   TouchableOpacity,
 } from "react-native";
 
-const DiseaseCard = ({ image, name, onPress }) => {
+import { Ionicons } from "@expo/vector-icons";
+
+const DiseaseCard = ({ image, imageUrl, name, onPress }) => {
+  const displayImage = imageUrl || image;
   return (
     <View style={styles.card}>
       <TouchableOpacity activeOpacity={0.7} onPress={onPress}>
         <View style={styles.imageContainer}>
-          <Image
-            source={{ uri: image }}
-            style={styles.image}
-            resizeMode="cover"
-            onError={(e) =>
-              console.log("Failed to load image:", e.nativeEvent.error)
-            }
-          />
+          {displayImage ? (
+            <Image
+              source={{ uri: displayImage }}
+              style={styles.image}
+              resizeMode="cover"
+              onError={(e) =>
+                console.log("Failed to load image:", e.nativeEvent.error)
+              }
+            />
+          ) : (
+            <Ionicons name="bug" size={40} color="#81C784" />
+          )}
         </View>
         <View style={styles.textContainer}>
           <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">

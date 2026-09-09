@@ -13,18 +13,40 @@ import {
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
+import { useDiseaseById } from "../hooks/diseases";
 
 const { width } = Dimensions.get("screen");
 
 const SingleDiseaseScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { disease } = route.params; // Get disease data from navigation params
+  const { disease: initialDisease } = route.params;
+
+  const { data: fullDisease, isLoading } = useDiseaseById(initialDisease?.id || initialDisease?._id);
+  const disease = fullDisease || initialDisease;
+
+  if (isLoading && !fullDisease) {
+    return (
+      <View style={[styles.container, styles.center]}>
+        <ActivityIndicator size="large" color="#2E7D32" />
+      </View>
+    );
+  }
+
+  const displayImage = disease.imageUrl || disease.image;
+  const treatmentSteps = disease.treatment?.steps || [];
+  const otherNamesText = disease.otherNames?.join(", ");
 
   return (
     <View style={styles.container}>
       {/* Disease Image */}
-      <Image source={{ uri: disease.image }} style={styles.diseaseImage} />
+      {displayImage ? (
+        <Image source={{ uri: displayImage }} style={styles.diseaseImage} />
+      ) : (
+        <View style={[styles.diseaseImage, { backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center' }]}>
+          <Icon name="bug" size={80} color="#81C784" />
+        </View>
+      )}
       {/* Back Button */}
       <TouchableOpacity
         onPress={() => navigation.goBack()}
@@ -36,11 +58,11 @@ const SingleDiseaseScreen = () => {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.infoCard}>
           <Text style={styles.title}>{disease.name}</Text>
-          {disease.otherNames && disease.otherNames.length > 0 && (
+          {otherNamesText ? (
             <Text style={styles.subtitle}>
-              Also known as: {disease.otherNames.join(", ")}
+              Also known as: {otherNamesText}
             </Text>
-          )}
+          ) : null}
 
           <View style={styles.divider} />
 
@@ -52,40 +74,48 @@ const SingleDiseaseScreen = () => {
             </>
           )}
 
-          {disease.type && disease.type.length > 0 && (
+          {disease.type && (
             <>
               <Text style={styles.sectionTitle}>Type</Text>
               <View style={styles.tagsContainer}>
-                {disease.type.map((type, index) => (
+                {Array.isArray(disease.type) ? disease.type.map((type, index) => (
                   <View key={index} style={styles.tag}>
                     <Text style={styles.tagText}>{type}</Text>
                   </View>
-                ))}
+                )) : (
+                  <View style={styles.tag}>
+                    <Text style={styles.tagText}>{disease.type}</Text>
+                  </View>
+                )}
               </View>
               <View style={styles.divider} />
             </>
           )}
 
-          {disease.causes && disease.causes.length > 0 && (
+          {disease.causes && (
             <>
               <Text style={styles.sectionTitle}>Causes</Text>
-              {disease.causes.map((cause, index) => (
+              {Array.isArray(disease.causes) ? disease.causes.map((cause, index) => (
                 <Text key={index} style={styles.listItem}>
                   • {cause}
                 </Text>
-              ))}
+              )) : (
+                <Text style={styles.text}>{disease.causes}</Text>
+              )}
               <View style={styles.divider} />
             </>
           )}
 
-          {disease.symptoms && disease.symptoms.length > 0 && (
+          {disease.symptoms && (
             <>
               <Text style={styles.sectionTitle}>Symptoms</Text>
-              {disease.symptoms.map((symptom, index) => (
+              {Array.isArray(disease.symptoms) ? disease.symptoms.map((symptom, index) => (
                 <Text key={index} style={styles.listItem}>
                   • {symptom}
                 </Text>
-              ))}
+              )) : (
+                <Text style={styles.text}>{disease.symptoms}</Text>
+              )}
               <View style={styles.divider} />
             </>
           )}
@@ -93,46 +123,56 @@ const SingleDiseaseScreen = () => {
           {disease.treatment && (
             <>
               <Text style={styles.sectionTitle}>Treatment</Text>
-
-              {disease.treatment.cultural_control &&
-                disease.treatment.cultural_control.length > 0 && (
-                  <>
-                    <Text style={styles.subsectionTitle}>Cultural Control</Text>
-                    {disease.treatment.cultural_control.map((method, index) => (
-                      <Text key={index} style={styles.listItem}>
-                        • {method}
-                      </Text>
-                    ))}
-                  </>
-                )}
-
-              {disease.treatment.chemical_control &&
-                disease.treatment.chemical_control.length > 0 && (
-                  <>
-                    <Text style={styles.subsectionTitle}>Chemical Control</Text>
-                    {disease.treatment.chemical_control.map((method, index) => (
-                      <Text key={index} style={styles.listItem}>
-                        • {method}
-                      </Text>
-                    ))}
-                  </>
-                )}
-
-              {disease.treatment.organic_biological_control &&
-                disease.treatment.organic_biological_control.length > 0 && (
-                  <>
-                    <Text style={styles.subsectionTitle}>
-                      Organic/Biological Control
-                    </Text>
-                    {disease.treatment.organic_biological_control.map(
-                      (method, index) => (
-                        <Text key={index} style={styles.listItem}>
-                          • {method}
-                        </Text>
-                      )
+              
+              {treatmentSteps.length > 0 ? (
+                treatmentSteps.map((step, index) => (
+                  <Text key={index} style={styles.listItem}>
+                    {index + 1}. {step}
+                  </Text>
+                ))
+              ) : (
+                <>
+                  {disease.treatment.cultural_control &&
+                    disease.treatment.cultural_control.length > 0 && (
+                      <>
+                        <Text style={styles.subsectionTitle}>Cultural Control</Text>
+                        {disease.treatment.cultural_control.map((method, index) => (
+                          <Text key={index} style={styles.listItem}>
+                            • {method}
+                          </Text>
+                        ))}
+                      </>
                     )}
-                  </>
-                )}
+
+                  {disease.treatment.chemical_control &&
+                    disease.treatment.chemical_control.length > 0 && (
+                      <>
+                        <Text style={styles.subsectionTitle}>Chemical Control</Text>
+                        {disease.treatment.chemical_control.map((method, index) => (
+                          <Text key={index} style={styles.listItem}>
+                            • {method}
+                          </Text>
+                        ))}
+                      </>
+                    )}
+
+                  {disease.treatment.organic_biological_control &&
+                    disease.treatment.organic_biological_control.length > 0 && (
+                      <>
+                        <Text style={styles.subsectionTitle}>
+                          Organic/Biological Control
+                        </Text>
+                        {disease.treatment.organic_biological_control.map(
+                          (method, index) => (
+                            <Text key={index} style={styles.listItem}>
+                              • {method}
+                            </Text>
+                          )
+                        )}
+                      </>
+                    )}
+                </>
+              )}
             </>
           )}
         </View>
@@ -212,6 +252,10 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "#ddd",
     marginVertical: 12,
+  },
+  center: {
+    justifyContent: "center",
+    alignItems: "center",
   },
   tagsContainer: {
     flexDirection: "row",
