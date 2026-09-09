@@ -5,7 +5,6 @@ import {
   View,
   TouchableOpacity,
   Image,
-  
 } from "react-native";
 import React from "react";
 import { useNavigation } from "@react-navigation/native";
@@ -14,8 +13,8 @@ import { usePlants } from "../hooks/plants";
 import LottieView from "lottie-react-native";
 import { ARTICLES } from "../data/articleData";
 import ArticleCard from "../components/ArticleCard";
-import WeatherWallpaper from "../components/WeatherWallpaper"; 
-import { ImageBackground } from 'react-native';
+import WeatherWallpaper from "../components/WeatherWallpaper";
+import { ImageBackground } from "react-native";
 
 const SCREENS = {
   ALL_PLANTS: "AllPlants",
@@ -28,9 +27,9 @@ const HomeScreen = () => {
   const navigation = useNavigation();
 
   const renderHeader = () => (
-     <>
-    {/* Weather Wallpaper */}
-    <WeatherWallpaper/>
+    <>
+      {/* Weather Wallpaper */}
+      <WeatherWallpaper />
       {/* Articles Section */}
       <View style={styles.articlesSection}>
         <Text style={styles.articlesTitle}>Articles</Text>
@@ -133,32 +132,29 @@ const HomeScreen = () => {
   }
 
   return (
-  //     <ImageBackground
-  //   source={require("../assets/images/5.jpg")} 
-  //   style={{ flex: 1 }}
-  //   resizeMode="cover"
-  // >
+    //     <ImageBackground
+    //   source={require("../assets/images/5.jpg")}
+    //   style={{ flex: 1 }}
+    //   resizeMode="cover"
+    // >
     <FlatList
       data={plants.slice(0, 6)}
       keyExtractor={(item) => item._id}
       renderItem={renderPlant}
       numColumns={2}
-      
       ListHeaderComponent={renderHeader}
       ListFooterComponent={renderCategories}
-     
       contentContainerStyle={styles.container}
     />
-   // </ImageBackground>
+    // </ImageBackground>
   );
-
 };
 
 export default HomeScreen;
 
 const styles = StyleSheet.create({
   container: {
-     backgroundColor:'white'
+    backgroundColor: "white",
     // backgroundColor: 'rgba(228, 220, 220, 0.55)',
   },
   articlesSection: {
@@ -236,5 +232,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
   },
- 
 });

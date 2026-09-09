@@ -4,7 +4,7 @@ import axiosInstance from "../api/axiosInstance";
 const fetchPlants = async () => {
   try {
     const { data } = await axiosInstance.get("/plants", {
-      params: { limit: 100 }
+      params: { limit: 100 },
     });
     return data.data; // Paginated envelope
   } catch (error) {

@@ -1,1152 +1,369 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import {
   StyleSheet,
   View,
   Text,
   TouchableOpacity,
-  FlatList,
-  Alert,
+  ScrollView,
   Dimensions,
-  Platform,
-ImageBackground
 } from "react-native";
-import * as Calendar from "expo-calendar";
-import {
-  format,
-  parseISO,
-  startOfMonth,
-  endOfMonth,
-  eachDayOfInterval,
-  isSameMonth,
-  isSameDay,
-} from "date-fns";
+import { format } from "date-fns";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useMyPlants } from "../hooks/myPlants";
 import { useAuth } from "../hooks/useAuth";
 
 const { width } = Dimensions.get("window");
-const DAY_SIZE = (width - 32) / 7;
+const DAY_SIZE = (width - 32 - 6 * 4) / 7;
+const DAY_MS = 1000 * 60 * 60 * 24;
+
+/**
+ * Whether `year/month/day` falls on the recurring care schedule anchored
+ * at `anchorIso` (the backend's next-due date) repeating every
+ * `frequencyDays`. Projecting the interval forwards and backwards means
+ * any month — past or future — shows the correct recurring pattern,
+ * instead of only ever lighting up the single "next due" date.
+ *
+ * Ported from DEPI-Front's CalendarModal so the mobile and web apps
+ * agree on what counts as a care day.
+ */
+function matchesSchedule(anchorIso, frequencyDays, year, month, day) {
+  if (!anchorIso || !frequencyDays || frequencyDays <= 0) return false;
+
+  const anchor = new Date(anchorIso);
+  const anchorMidnight = Date.UTC(
+    anchor.getFullYear(),
+    anchor.getMonth(),
+    anchor.getDate(),
+  );
+  const targetMidnight = Date.UTC(year, month, day);
+
+  const diffDays = Math.round((targetMidnight - anchorMidnight) / DAY_MS);
+  const remainder =
+    ((diffDays % frequencyDays) + frequencyDays) % frequencyDays;
+  return remainder === 0;
+}
 
 const CalendarScreen = () => {
   const { userToken } = useAuth();
-  const { data: myPlants } = useMyPlants();
-  const [events, setEvents] = useState([]);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [calendarReady, setCalendarReady] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const { data: myPlants, isLoading } = useMyPlants();
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDay, setSelectedDay] = useState(new Date());
 
-  // Initialize calendar and request permissions
-  useEffect(() => {
-    const setupCalendar = async () => {
-      try {
-        console.log("Requesting calendar permissions...");
+  const plants = myPlants || [];
+  const month = currentDate.getMonth();
+  const year = currentDate.getFullYear();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+  const monthLabel = format(currentDate, "MMMM yyyy");
 
-        // Request both calendar and reminders permissions on iOS
-        const permissions =
-          Platform.OS === "ios"
-            ? await Promise.all([
-                Calendar.requestCalendarPermissionsAsync(),
-                Calendar.requestRemindersPermissionsAsync(),
-              ])
-            : [await Calendar.requestCalendarPermissionsAsync()];
+  const changeMonth = (amount) => {
+    setCurrentDate(new Date(year, month + amount, 1));
+  };
 
-        // Check if all required permissions are granted
-        const allGranted = permissions.every((p) => p.status === "granted");
-
-        if (!allGranted) {
-          Alert.alert(
-            "Permission Required",
-            "Please enable calendar and reminders access to view plant care events",
-            [
-              {
-                text: "Cancel",
-                style: "cancel",
-              },
-              {
-                text: "Open Settings",
-                onPress: () => Calendar.openCalendarSettingsAsync(),
-              },
-            ]
-          );
-          return;
-        }
-
-        console.log("Calendar permissions granted");
-        setCalendarReady(true);
-      } catch (error) {
-        console.error("Calendar setup error:", error);
-        Alert.alert("Error", "Failed to initialize calendar features");
-      }
-    };
-
-    setupCalendar();
-  }, []);
-
-  // Load events from device calendar
-  useEffect(() => {
-    if (!calendarReady) return;
-
-    const loadEvents = async () => {
-      try {
-        console.log("Loading calendar events...");
-        let calendars;
-
-        try {
-          calendars = await Calendar.getCalendarsAsync();
-        } catch (error) {
-          if (error.message.includes("REMINDERS permission")) {
-            Alert.alert(
-              "Reminders Permission Required",
-              "Please enable reminders access in Settings to use calendar features",
-              [{ text: "OK" }]
-            );
-            return;
-          }
-          throw error;
-        }
-
-        const defaultCalendar =
-          calendars.find((c) => c.isPrimary) || calendars[0];
-
-        if (!defaultCalendar) {
-          console.warn("No default calendar found");
-          return;
-        }
-
-        const now = new Date();
-        const oneYearLater = new Date();
-        oneYearLater.setFullYear(now.getFullYear() + 1);
-
-        const calendarEvents = await Calendar.getEventsAsync(
-          [defaultCalendar.id],
-          now,
-          oneYearLater
-        );
-
-        console.log(`Loaded ${calendarEvents.length} events`);
-        setEvents(calendarEvents);
-      } catch (error) {
-        console.error("Error loading calendar events:", error);
-        Alert.alert("Error", "Failed to load calendar events");
-      }
-    };
-
-    loadEvents();
-  }, [calendarReady]);
-
-  // Get all plant tasks from myPlants data
-  const getPlantTasks = () => {
-    if (!myPlants) return [];
-
+  // Projects each plant's real watering/fertilizing interval across
+  // whatever month is currently showing — same logic as the web dashboard.
+  const getTasks = (day, forYear = year, forMonth = month) => {
     const tasks = [];
-
-    myPlants.forEach((plantItem) => {
-      const plant = plantItem.plant || plantItem;
-
-      if (plantItem.nextWatering) {
-        tasks.push({
-          id: `${plant._id}-watering-${plantItem.nextWatering}`,
-          plantId: plant._id,
-          type: "watering",
-          date: new Date(plantItem.nextWatering),
-          plantName: plant.commonName,
-          scientificName: plant.scientificName,
-          image: plant.image,
-        });
+    plants.forEach((myPlant) => {
+      if (
+        matchesSchedule(
+          myPlant.nextWatering,
+          myPlant.wateringFrequency,
+          forYear,
+          forMonth,
+          day,
+        )
+      ) {
+        tasks.push({ type: "water", plant: myPlant.plant?.commonName });
       }
-
-      if (plantItem.nextFertilizing) {
-        tasks.push({
-          id: `${plant._id}-fertilizing-${plantItem.nextFertilizing}`,
-          plantId: plant._id,
-          type: "fertilizing",
-          date: new Date(plantItem.nextFertilizing),
-          plantName: plant.commonName,
-          scientificName: plant.scientificName,
-          image: plant.image,
-        });
+      if (
+        matchesSchedule(
+          myPlant.nextFertilizing,
+          myPlant.fertilizingFrequency,
+          forYear,
+          forMonth,
+          day,
+        )
+      ) {
+        tasks.push({ type: "fertilize", plant: myPlant.plant?.commonName });
       }
     });
-
     return tasks;
   };
 
-  const tasks = getPlantTasks();
+  const selectedDayTasks = useMemo(
+    () =>
+      getTasks(
+        selectedDay.getDate(),
+        selectedDay.getFullYear(),
+        selectedDay.getMonth(),
+      ),
+    [selectedDay, plants],
+  );
 
-  // Generate days for the current month view
-  const generateMonthDays = () => {
-    const start = startOfMonth(currentMonth);
-    const end = endOfMonth(currentMonth);
-    const days = eachDayOfInterval({ start, end });
-
-    // Add padding days from previous month
-    const startDay = start.getDay();
-    for (let i = 0; i < startDay; i++) {
-      days.unshift(null);
-    }
-
-    return days;
-  };
-
-  const monthDays = generateMonthDays();
-
-  // Get tasks for a specific date
-  const getTasksForDate = (date) => {
-    if (!date) return [];
-    return tasks.filter((task) => isSameDay(task.date, date));
-  };
-
-  // Check if a date has tasks
-  const hasTasks = (date) => {
-    if (!date) return false;
-    return tasks.some((task) => isSameDay(task.date, date));
-  };
-
-  // Get the type of tasks for a date (for dot colors)
-  const getTaskTypesForDate = (date) => {
-    if (!date) return [];
-    const dateTasks = getTasksForDate(date);
-    return [...new Set(dateTasks.map((task) => task.type))];
-  };
-
-  // Check if task is already in calendar
-  const isTaskInCalendar = (task) => {
-    return events.some((event) => {
-      // Check if event.startDate exists and is a valid Date object
-      if (!event.startDate || !(event.startDate instanceof Date)) return false;
-
-      const isSameDay =
-        event.startDate.getDate() === task.date.getDate() &&
-        event.startDate.getMonth() === task.date.getMonth() &&
-        event.startDate.getFullYear() === task.date.getFullYear();
-
-      const isSamePlant = event.title.includes(task.plantName);
-      const isSameType = event.title.includes(
-        task.type === "watering" ? "Water" : "Fertilize"
-      );
-
-      return isSameDay && isSamePlant && isSameType;
-    });
-  };
-
-  // Add task to device calendar
-  const addTaskToCalendar = async (task) => {
-    try {
-      let calendars;
-      try {
-        calendars = await Calendar.getCalendarsAsync();
-      } catch (error) {
-        if (error.message.includes("REMINDERS permission")) {
-          Alert.alert(
-            "Reminders Permission Required",
-            "Please enable reminders access in Settings to add calendar events",
-            [{ text: "OK" }]
-          );
-          return;
-        }
-        throw error;
-      }
-
-      const defaultCalendar =
-        calendars.find((c) => c.isPrimary) || calendars[0];
-
-      if (!defaultCalendar) {
-        Alert.alert("Error", "No calendar found");
-        return;
-      }
-
-      const plant =
-        myPlants.find((p) => (p.plant?._id || p._id) === task.plantId)?.plant ||
-        myPlants.find((p) => p._id === task.plantId);
-
-      if (!plant) {
-        Alert.alert("Error", "Plant not found");
-        return;
-      }
-
-      const startDate = new Date(task.date);
-      const endDate = new Date(startDate.getTime() + 30 * 60 * 1000);
-
-      const eventDetails = {
-        title: `${task.type === "watering" ? "💧 Water" : "🌿 Fertilize"} ${
-          plant.commonName
-        }`,
-        startDate: startDate,
-        endDate: endDate,
-        timeZone: "UTC",
-        alarms: [{ relativeOffset: -60 }],
-        notes: `Plant care reminder for ${plant.commonName} (${plant.scientificName})`,
-      };
-
-      if (Platform.OS === "ios") {
-        eventDetails.calendarId = defaultCalendar.id;
-      }
-
-      await Calendar.createEventAsync(defaultCalendar.id, eventDetails);
-      Alert.alert("Success", "Event added to your calendar");
-
-      // Refresh events after adding
-      const updatedEvents = await Calendar.getEventsAsync(
-        [defaultCalendar.id],
-        new Date(),
-        new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-      );
-      setEvents(updatedEvents);
-    } catch (error) {
-      console.error("Error adding to calendar:", error);
-      Alert.alert("Error", "Failed to add event to calendar");
-    }
-  };
-
-  // Render individual task item
-  const renderTaskItem = ({ item }) => {
-    const isInCalendar = isTaskInCalendar(item);
-
-    return (
-      <View style={styles.taskItem}>
-        <View style={styles.taskInfo}>
-          <Text style={styles.taskType}>
-            {item.type === "watering" ? "💧 Water" : "🌿 Fertilize"}{" "}
-            {item.plantName}
-          </Text>
-          <Text style={styles.taskScientific}>{item.scientificName}</Text>
-          <Text style={styles.taskTime}>{format(item.date, "h:mm a")}</Text>
-        </View>
-        <TouchableOpacity
-          style={[
-            styles.calendarButton,
-            isInCalendar && styles.calendarButtonAdded,
-          ]}
-          onPress={() => addTaskToCalendar(item)}
-          disabled={isInCalendar}
-        >
-          <Icon
-            name={isInCalendar ? "checkmark-circle" : "calendar-outline"}
-            size={24}
-            color={isInCalendar ? "#4CAF50" : "#2196F3"}
-          />
-        </TouchableOpacity>
-      </View>
-    );
-  };
-
-  // Render a day cell in the calendar grid
-  const renderDayCell = (day, index) => {
-    if (!day) {
-      return <View key={`empty-${index}`} style={styles.dayCellEmpty} />;
-    }
-
-    const isSelected = isSameDay(day, selectedDate);
-    const taskTypes = getTaskTypesForDate(day);
-    const hasWatering = taskTypes.includes("watering");
-    const hasFertilizing = taskTypes.includes("fertilizing");
+  const renderDayCell = (day) => {
+    const tasks = getTasks(day);
+    const isActive =
+      selectedDay.getDate() === day &&
+      selectedDay.getMonth() === month &&
+      selectedDay.getFullYear() === year;
+    const hasWater = tasks.some((t) => t.type === "water");
+    const hasFertilize = tasks.some((t) => t.type === "fertilize");
 
     return (
       <TouchableOpacity
-        key={day.toString()}
-        style={[styles.dayCell, isSelected && styles.dayCellSelected]}
-        onPress={() => setSelectedDate(day)}
+        key={day}
+        style={[styles.dayCell, isActive && styles.dayCellActive]}
+        onPress={() => setSelectedDay(new Date(year, month, day))}
       >
-        <Text style={[styles.dayText, isSelected && styles.dayTextSelected]}>
-          {day.getDate()}
+        <Text style={[styles.dayText, isActive && styles.dayTextActive]}>
+          {day}
         </Text>
-
-        {/* Dots for task types */}
-        <View style={styles.dotsContainer}>
-          {hasWatering && <View style={[styles.dot, styles.wateringDot]} />}
-          {hasFertilizing && (
-            <View style={[styles.dot, styles.fertilizingDot]} />
-          )}
+        <View style={styles.dotsRow}>
+          {hasWater && <View style={[styles.dot, styles.waterDot]} />}
+          {hasFertilize && <View style={[styles.dot, styles.fertilizeDot]} />}
         </View>
       </TouchableOpacity>
     );
   };
 
-  // Navigate to previous/next month
-  const navigateMonth = (months) => {
-    const newDate = new Date(currentMonth);
-    newDate.setMonth(newDate.getMonth() + months);
-    setCurrentMonth(newDate);
-  };
+  if (!userToken) {
+    return (
+      <View style={styles.centerContainer}>
+        <Icon name="calendar-outline" size={64} color="#C8E6C9" />
+        <Text style={styles.emptyTitle}>Log in to see your care calendar</Text>
+        <Text style={styles.emptySubtitle}>
+          Your watering and fertilizing schedule shows up here once you're
+          signed in.
+        </Text>
+      </View>
+    );
+  }
 
-  // Filter tasks for the selected date
-  const filteredTasks = getTasksForDate(selectedDate);
+  if (isLoading) {
+    return (
+      <View style={styles.centerContainer}>
+        <Icon name="leaf-outline" size={48} color="#A5D6A7" />
+        <Text style={styles.emptySubtitle}>Loading your schedule…</Text>
+      </View>
+    );
+  }
 
   return (
- <ImageBackground 
-      source={require('../assets/images/15.jpg')} 
-      style={styles.backgroundImage}
-      resizeMode="cover"
-    >
-    <View style={styles.container}>
-      {/* Month header with navigation */}
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Text style={styles.title}>Care Calendar</Text>
+
+      {/* Month control */}
       <View style={styles.monthHeader}>
-        <TouchableOpacity onPress={() => navigateMonth(-1)}>
-          <Icon name="chevron-back" size={24} color="#2E7D32" />
+        <TouchableOpacity
+          onPress={() => changeMonth(-1)}
+          style={styles.navButton}
+        >
+          <Icon name="chevron-back" size={22} color="#2E7D32" />
         </TouchableOpacity>
-        <Text style={styles.monthTitle}>
-          {format(currentMonth, "MMMM yyyy")}
-        </Text>
-        <TouchableOpacity onPress={() => navigateMonth(1)}>
-          <Icon name="chevron-forward" size={24} color="#2E7D32" />
+        <Text style={styles.monthTitle}>{monthLabel}</Text>
+        <TouchableOpacity
+          onPress={() => changeMonth(1)}
+          style={styles.navButton}
+        >
+          <Icon name="chevron-forward" size={22} color="#2E7D32" />
         </TouchableOpacity>
       </View>
 
-      {/* Day names header */}
-      <View style={styles.daysHeader}>
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-          <Text key={day} style={styles.dayHeader}>
-            {day}
+      {/* Weekday header */}
+      <View style={styles.weekRow}>
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+          <Text key={d} style={styles.weekDayText}>
+            {d}
           </Text>
         ))}
       </View>
 
       {/* Calendar grid */}
-      <View style={styles.calendarGrid}>
-        {monthDays.map((day, index) => renderDayCell(day, index))}
-      </View>
-
-      {/* Tasks for selected date */}
-      <View style={styles.tasksContainer}>
-        <Text style={styles.tasksTitle}>
-          Tasks for {format(selectedDate, "MMMM d, yyyy")}
-        </Text>
-
-        {filteredTasks.length > 0 ? (
-          <FlatList
-            data={filteredTasks}
-            renderItem={renderTaskItem}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.tasksList}
-          />
-        ) : (
-          <View style={styles.noTasks}>
-            <Text style={styles.noTasksText}>
-              No tasks scheduled for this day
-            </Text>
-          </View>
+      <View style={styles.grid}>
+        {Array.from({ length: firstDay }).map((_, i) => (
+          <View key={`pad-${i}`} style={styles.dayCellEmpty} />
+        ))}
+        {Array.from({ length: daysInMonth }).map((_, i) =>
+          renderDayCell(i + 1),
         )}
       </View>
-    </View>
-</ImageBackground>
+
+      {/* Selected day tasks */}
+      <View style={styles.tasksCard}>
+        <Text style={styles.tasksTitle}>
+          Tasks for {format(selectedDay, "MMMM d, yyyy")}
+        </Text>
+
+        {selectedDayTasks.length === 0 ? (
+          <View style={styles.noTasks}>
+            <Text style={styles.noTasksText}>No care scheduled</Text>
+          </View>
+        ) : (
+          selectedDayTasks.map((task, index) => (
+            <View key={index} style={styles.taskRow}>
+              <Icon
+                name={task.type === "water" ? "water" : "nutrition"}
+                size={18}
+                color={task.type === "water" ? "#2196F3" : "#FF9800"}
+              />
+              <Text style={styles.taskText}>
+                {task.type === "water" ? "Water " : "Fertilize "}
+                {task.plant}
+              </Text>
+            </View>
+          ))
+        )}
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-backgroundImage: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
   container: {
     flex: 1,
-     backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: "#F5F7F5",
+  },
+  content: {
     padding: 16,
+    paddingBottom: 40,
+  },
+  centerContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    padding: 24,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginTop: 12,
+    textAlign: "center",
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: "#777",
+    textAlign: "center",
+    marginTop: 6,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: "bold",
+    color: "#1B5E20",
+    marginBottom: 16,
   },
   monthHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    marginBottom: 12,
+  },
+  navButton: {
+    padding: 6,
   },
   monthTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
+    fontSize: 17,
+    fontWeight: "700",
     color: "#2E7D32",
   },
-  daysHeader: {
+  weekRow: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 10,
+    justifyContent: "space-between",
+    marginBottom: 8,
+    paddingHorizontal: 2,
   },
-  dayHeader: {
+  weekDayText: {
     width: DAY_SIZE,
     textAlign: "center",
-    fontWeight: "bold",
-    color: "#555",
+    fontWeight: "600",
+    fontSize: 12,
+    color: "#777",
   },
-  calendarGrid: {
+  grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginBottom: 20,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 8,
+    marginBottom: 16,
   },
   dayCell: {
     width: DAY_SIZE,
     height: DAY_SIZE,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: DAY_SIZE / 2,
+    borderRadius: 10,
     marginVertical: 2,
   },
   dayCellEmpty: {
     width: DAY_SIZE,
     height: DAY_SIZE,
+    marginVertical: 2,
   },
-  dayCellSelected: {
+  dayCellActive: {
     backgroundColor: "#2E7D32",
   },
   dayText: {
-    fontSize: 16,
+    fontSize: 14,
     color: "#333",
   },
-  dayTextSelected: {
-    color: "#fff",
+  dayTextActive: {
+    color: "#FFFFFF",
     fontWeight: "bold",
   },
-  dotsContainer: {
+  dotsRow: {
     flexDirection: "row",
-    justifyContent: "center",
     marginTop: 2,
+    gap: 3,
   },
   dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginHorizontal: 1,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
   },
-  wateringDot: {
+  waterDot: {
     backgroundColor: "#2196F3",
   },
-  fertilizingDot: {
+  fertilizeDot: {
     backgroundColor: "#FF9800",
   },
-  tasksContainer: {
-    flex: 1,
+  tasksCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 16,
   },
   tasksTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 16,
+    fontSize: 16,
+    fontWeight: "700",
     color: "#333",
-  },
-  tasksList: {
-    paddingBottom: 20,
-  },
-  taskItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#f5f5f5",
-    borderRadius: 8,
-    padding: 16,
     marginBottom: 12,
   },
-  taskInfo: {
-    flex: 1,
+  taskRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#EEE",
   },
-  taskType: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 4,
-  },
-  taskScientific: {
+  taskText: {
     fontSize: 14,
-    fontStyle: "italic",
-    color: "#666",
-    marginBottom: 4,
-  },
-  taskTime: {
-    fontSize: 12,
-    color: "#888",
-  },
-  calendarButton: {
-    padding: 8,
-  },
-  calendarButtonAdded: {
-    opacity: 0.7,
+    color: "#333",
+    marginLeft: 10,
   },
   noTasks: {
-    flex: 1,
-    justifyContent: "center",
+    paddingVertical: 16,
     alignItems: "center",
   },
   noTasksText: {
-    fontSize: 16,
-    color: "#888",
+    fontSize: 14,
+    color: "#999",
   },
 });
 
 export default CalendarScreen;
-// import React, { useState, useEffect } from "react";
-// import {
-//   StyleSheet,
-//   View,
-//   Text,
-//   TouchableOpacity,
-//   FlatList,
-//   Alert,
-//   Dimensions,
-//   Platform,
-//   ImageBackground,
-//   ScrollView
-// } from "react-native";
-// import * as Calendar from "expo-calendar";
-// import {
-//   format,
-//   parseISO,
-//   startOfMonth,
-//   endOfMonth,
-//   eachDayOfInterval,
-//   isSameMonth,
-//   isSameDay,
-// } from "date-fns";
-// import Icon from "react-native-vector-icons/Ionicons";
-// import { useMyPlants } from "../hooks/myPlants";
-// import { useAuth } from "../hooks/useAuth";
-
-// const { width } = Dimensions.get("window");
-// const DAY_SIZE = (width - 32) / 7;
-
-// const CalendarScreen = () => {
-//   const { userToken } = useAuth();
-//   const { data: myPlants } = useMyPlants();
-//   const [events, setEvents] = useState([]);
-//   const [currentMonth, setCurrentMonth] = useState(new Date());
-//   const [calendarReady, setCalendarReady] = useState(false);
-//   const [selectedDate, setSelectedDate] = useState(new Date());
-
-//   // Initialize calendar and request permissions
-//   useEffect(() => {
-//     const setupCalendar = async () => {
-//       try {
-//         console.log("Requesting calendar permissions...");
-
-//         const permissions =
-//           Platform.OS === "ios"
-//             ? await Promise.all([
-//                 Calendar.requestCalendarPermissionsAsync(),
-//                 Calendar.requestRemindersPermissionsAsync(),
-//               ])
-//             : [await Calendar.requestCalendarPermissionsAsync()];
-
-//         const allGranted = permissions.every((p) => p.status === "granted");
-
-//         if (!allGranted) {
-//           Alert.alert(
-//             "Permission Required",
-//             "Please enable calendar and reminders access to view plant care events",
-//             [
-//               {
-//                 text: "Cancel",
-//                 style: "cancel",
-//               },
-//               {
-//                 text: "Open Settings",
-//                 onPress: () => Calendar.openCalendarSettingsAsync(),
-//               },
-//             ]
-//           );
-//           return;
-//         }
-
-//         console.log("Calendar permissions granted");
-//         setCalendarReady(true);
-//       } catch (error) {
-//         console.error("Calendar setup error:", error);
-//         Alert.alert("Error", "Failed to initialize calendar features");
-//       }
-//     };
-
-//     setupCalendar();
-//   }, []);
-
-//   // Load events from device calendar
-//   useEffect(() => {
-//     if (!calendarReady) return;
-
-//     const loadEvents = async () => {
-//       try {
-//         console.log("Loading calendar events...");
-//         let calendars;
-
-//         try {
-//           calendars = await Calendar.getCalendarsAsync();
-//         } catch (error) {
-//           if (error.message.includes("REMINDERS permission")) {
-//             Alert.alert(
-//               "Reminders Permission Required",
-//               "Please enable reminders access in Settings to use calendar features",
-//               [{ text: "OK" }]
-//             );
-//             return;
-//           }
-//           throw error;
-//         }
-
-//         const defaultCalendar =
-//           calendars.find((c) => c.isPrimary) || calendars[0];
-
-//         if (!defaultCalendar) {
-//           console.warn("No default calendar found");
-//           return;
-//         }
-
-//         const now = new Date();
-//         const oneYearLater = new Date();
-//         oneYearLater.setFullYear(now.getFullYear() + 1);
-
-//         const calendarEvents = await Calendar.getEventsAsync(
-//           [defaultCalendar.id],
-//           now,
-//           oneYearLater
-//         );
-
-//         console.log(`Loaded ${calendarEvents.length} events`);
-//         setEvents(calendarEvents);
-//       } catch (error) {
-//         console.error("Error loading calendar events:", error);
-//         Alert.alert("Error", "Failed to load calendar events");
-//       }
-//     };
-
-//     loadEvents();
-//   }, [calendarReady]);
-
-//   // Get all plant tasks from myPlants data
-//   const getPlantTasks = () => {
-//     if (!myPlants) return [];
-
-//     const tasks = [];
-
-//     myPlants.forEach((plantItem) => {
-//       const plant = plantItem.plant || plantItem;
-
-//       if (plantItem.nextWatering) {
-//         tasks.push({
-//           id: `${plant._id}-watering-${plantItem.nextWatering}`,
-//           plantId: plant._id,
-//           type: "watering",
-//           date: new Date(plantItem.nextWatering),
-//           plantName: plant.commonName,
-//           scientificName: plant.scientificName,
-//           image: plant.image,
-//         });
-//       }
-
-//       if (plantItem.nextFertilizing) {
-//         tasks.push({
-//           id: `${plant._id}-fertilizing-${plantItem.nextFertilizing}`,
-//           plantId: plant._id,
-//           type: "fertilizing",
-//           date: new Date(plantItem.nextFertilizing),
-//           plantName: plant.commonName,
-//           scientificName: plant.scientificName,
-//           image: plant.image,
-//         });
-//       }
-//     });
-
-//     return tasks;
-//   };
-
-//   const tasks = getPlantTasks();
-
-//   // Generate days for the current month view
-//   const generateMonthDays = () => {
-//     const start = startOfMonth(currentMonth);
-//     const end = endOfMonth(currentMonth);
-//     const days = eachDayOfInterval({ start, end });
-
-//     const startDay = start.getDay();
-//     for (let i = 0; i < startDay; i++) {
-//       days.unshift(null);
-//     }
-
-//     return days;
-//   };
-
-//   const monthDays = generateMonthDays();
-
-//   // Get tasks for a specific date
-//   const getTasksForDate = (date) => {
-//     if (!date) return [];
-//     return tasks.filter((task) => isSameDay(task.date, date));
-//   };
-
-//   // Check if a date has tasks
-//   const hasTasks = (date) => {
-//     if (!date) return false;
-//     return tasks.some((task) => isSameDay(task.date, date));
-//   };
-
-//   // Get the type of tasks for a date (for dot colors)
-//   const getTaskTypesForDate = (date) => {
-//     if (!date) return [];
-//     const dateTasks = getTasksForDate(date);
-//     return [...new Set(dateTasks.map((task) => task.type))];
-//   };
-
-//   // Check if task is already in calendar
-//   const isTaskInCalendar = (task) => {
-//     return events.some((event) => {
-//       if (!event.startDate || !(event.startDate instanceof Date)) return false;
-
-//       const isSameDay =
-//         event.startDate.getDate() === task.date.getDate() &&
-//         event.startDate.getMonth() === task.date.getMonth() &&
-//         event.startDate.getFullYear() === task.date.getFullYear();
-
-//       const isSamePlant = event.title.includes(task.plantName);
-//       const isSameType = event.title.includes(
-//         task.type === "watering" ? "Water" : "Fertilize"
-//       );
-
-//       return isSameDay && isSamePlant && isSameType;
-//     });
-//   };
-
-//   // Add task to device calendar
-//   const addTaskToCalendar = async (task) => {
-//     try {
-//       let calendars;
-//       try {
-//         calendars = await Calendar.getCalendarsAsync();
-//       } catch (error) {
-//         if (error.message.includes("REMINDERS permission")) {
-//           Alert.alert(
-//             "Reminders Permission Required",
-//             "Please enable reminders access in Settings to add calendar events",
-//             [{ text: "OK" }]
-//           );
-//           return;
-//         }
-//         throw error;
-//       }
-
-//       const defaultCalendar =
-//         calendars.find((c) => c.isPrimary) || calendars[0];
-
-//       if (!defaultCalendar) {
-//         Alert.alert("Error", "No calendar found");
-//         return;
-//       }
-
-//       const plant =
-//         myPlants.find((p) => (p.plant?._id || p._id) === task.plantId)?.plant ||
-//         myPlants.find((p) => p._id === task.plantId);
-
-//       if (!plant) {
-//         Alert.alert("Error", "Plant not found");
-//         return;
-//       }
-
-//       const startDate = new Date(task.date);
-//       const endDate = new Date(startDate.getTime() + 30 * 60 * 1000);
-
-//       const eventDetails = {
-//         title: `${task.type === "watering" ? "💧 Water" : "🌿 Fertilize"} ${
-//           plant.commonName
-//         }`,
-//         startDate: startDate,
-//         endDate: endDate,
-//         timeZone: "UTC",
-//         alarms: [{ relativeOffset: -60 }],
-//         notes: `Plant care reminder for ${plant.commonName} (${plant.scientificName})`,
-//       };
-
-//       if (Platform.OS === "ios") {
-//         eventDetails.calendarId = defaultCalendar.id;
-//       }
-
-//       await Calendar.createEventAsync(defaultCalendar.id, eventDetails);
-//       Alert.alert("Success", "Event added to your calendar");
-
-//       const updatedEvents = await Calendar.getEventsAsync(
-//         [defaultCalendar.id],
-//         new Date(),
-//         new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-//       );
-//       setEvents(updatedEvents);
-//     } catch (error) {
-//       console.error("Error adding to calendar:", error);
-//       Alert.alert("Error", "Failed to add event to calendar");
-//     }
-//   };
-
-//   // Render individual task item
-//   const renderTaskItem = ({ item }) => {
-//     const isInCalendar = isTaskInCalendar(item);
-
-//     return (
-//       <View style={styles.taskItem}>
-//         <View style={styles.taskInfo}>
-//           <Text style={styles.taskType}>
-//             {item.type === "watering" ? "💧 Water" : "🌿 Fertilize"}{" "}
-//             {item.plantName}
-//           </Text>
-//           <Text style={styles.taskScientific}>{item.scientificName}</Text>
-//           <Text style={styles.taskTime}>{format(item.date, "h:mm a")}</Text>
-//         </View>
-//         <TouchableOpacity
-//           style={[
-//             styles.calendarButton,
-//             isInCalendar && styles.calendarButtonAdded,
-//           ]}
-//           onPress={() => addTaskToCalendar(item)}
-//           disabled={isInCalendar}
-//         >
-//           <Icon
-//             name={isInCalendar ? "checkmark-circle" : "calendar-outline"}
-//             size={24}
-//             color={isInCalendar ? "#4CAF50" : "#2196F3"}
-//           />
-//         </TouchableOpacity>
-//       </View>
-//     );
-//   };
-
-//   // Render a day cell in the calendar grid
-//   const renderDayCell = (day, index) => {
-//     if (!day) {
-//       return <View key={`empty-${index}`} style={styles.dayCellEmpty} />;
-//     }
-
-//     const isSelected = isSameDay(day, selectedDate);
-//     const taskTypes = getTaskTypesForDate(day);
-//     const hasWatering = taskTypes.includes("watering");
-//     const hasFertilizing = taskTypes.includes("fertilizing");
-
-//     return (
-//       <TouchableOpacity
-//         key={day.toString()}
-//         style={[styles.dayCell, isSelected && styles.dayCellSelected]}
-//         onPress={() => setSelectedDate(day)}
-//       >
-//         <Text style={[styles.dayText, isSelected && styles.dayTextSelected]}>
-//           {day.getDate()}
-//         </Text>
-
-//         <View style={styles.dotsContainer}>
-//           {hasWatering && <View style={[styles.dot, styles.wateringDot]} />}
-//           {hasFertilizing && (
-//             <View style={[styles.dot, styles.fertilizingDot]} />
-//           )}
-//         </View>
-//       </TouchableOpacity>
-//     );
-//   };
-
-//   // Navigate to previous/next month
-//   const navigateMonth = (months) => {
-//     const newDate = new Date(currentMonth);
-//     newDate.setMonth(newDate.getMonth() + months);
-//     setCurrentMonth(newDate);
-//   };
-
-//   const filteredTasks = getTasksForDate(selectedDate);
-
-//   return (
-//     <ImageBackground 
-//       source={require('../assets/images/background.jpg')} 
-//       style={styles.backgroundImage}
-//       resizeMode="cover"
-//     >
-//       <ScrollView contentContainerStyle={styles.container}>
-//         {/* Month header with navigation */}
-//         <View style={styles.monthHeader}>
-//           <TouchableOpacity onPress={() => navigateMonth(-1)}>
-//             <Icon name="chevron-back" size={24} color="#2E7D32" />
-//           </TouchableOpacity>
-//           <Text style={styles.monthTitle}>
-//             {format(currentMonth, "MMMM yyyy")}
-//           </Text>
-//           <TouchableOpacity onPress={() => navigateMonth(1)}>
-//             <Icon name="chevron-forward" size={24} color="#2E7D32" />
-//           </TouchableOpacity>
-//         </View>
-
-//         {/* Day names header */}
-//         <View style={styles.daysHeader}>
-//           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-//             <Text key={day} style={styles.dayHeader}>
-//               {day}
-//             </Text>
-//           ))}
-//         </View>
-
-//         {/* Calendar grid */}
-//         <View style={styles.calendarGrid}>
-//           {monthDays.map((day, index) => renderDayCell(day, index))}
-//         </View>
-
-//         {/* Tasks for selected date */}
-//         <View style={styles.tasksContainer}>
-//           <Text style={styles.tasksTitle}>
-//             Tasks for {format(selectedDate, "MMMM d, yyyy")}
-//           </Text>
-
-//           {filteredTasks.length > 0 ? (
-//             <FlatList
-//               data={filteredTasks}
-//               renderItem={renderTaskItem}
-//               keyExtractor={(item) => item.id}
-//               contentContainerStyle={styles.tasksList}
-//             />
-//           ) : (
-//             <View style={styles.noTasks}>
-//               <Text style={styles.noTasksText}>
-//                 No tasks scheduled for this day
-//               </Text>
-//             </View>
-//           )}
-//         </View>
-//       </ScrollView>
-//     </ImageBackground>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   backgroundImage: {
-//     flex: 1,
-//     width: '100%',
-//     height: '100%',
-//   },
-//   container: {
-//     flexGrow: 1,
-//     padding: 16,
-//     backgroundColor: 'rgba(255, 255, 255, 0.85)',
-//   },
-//   monthHeader: {
-//     flexDirection: "row",
-//     justifyContent: "space-between",
-//     alignItems: "center",
-//     marginBottom: 16,
-//     backgroundColor: 'rgba(255, 255, 255, 0.7)',
-//     borderRadius: 10,
-//     padding: 10,
-//   },
-//   monthTitle: {
-//     fontSize: 20,
-//     fontWeight: "bold",
-//     color: "#2E7D32",
-//     textShadowColor: 'rgba(0, 0, 0, 0.1)',
-//     textShadowOffset: { width: 1, height: 1 },
-//     textShadowRadius: 2,
-//   },
-//   daysHeader: {
-//     flexDirection: "row",
-//     justifyContent: "space-around",
-//     marginBottom: 10,
-//     backgroundColor: 'rgba(255, 255, 255, 0.7)',
-//     borderRadius: 8,
-//     paddingVertical: 8,
-//   },
-//   dayHeader: {
-//     width: DAY_SIZE,
-//     textAlign: "center",
-//     fontWeight: "bold",
-//     color: "#555",
-//   },
-//   calendarGrid: {
-//     flexDirection: "row",
-//     flexWrap: "wrap",
-//     marginBottom: 20,
-//     backgroundColor: 'rgba(255, 255, 255, 0.7)',
-//     borderRadius: 10,
-//     padding: 8,
-//   },
-//   dayCell: {
-//     width: DAY_SIZE,
-//     height: DAY_SIZE,
-//     justifyContent: "center",
-//     alignItems: "center",
-//     borderRadius: DAY_SIZE / 2,
-//     marginVertical: 2,
-//     backgroundColor: 'rgba(255, 255, 255, 0.8)',
-//   },
-//   dayCellEmpty: {
-//     width: DAY_SIZE,
-//     height: DAY_SIZE,
-//     backgroundColor: 'transparent',
-//   },
-//   dayCellSelected: {
-//     backgroundColor: "#2E7D32",
-//   },
-//   dayText: {
-//     fontSize: 16,
-//     color: "#333",
-//   },
-//   dayTextSelected: {
-//     color: "#fff",
-//     fontWeight: "bold",
-//   },
-//   dotsContainer: {
-//     flexDirection: "row",
-//     justifyContent: "center",
-//     marginTop: 2,
-//   },
-//   dot: {
-//     width: 6,
-//     height: 6,
-//     borderRadius: 3,
-//     marginHorizontal: 1,
-//   },
-//   wateringDot: {
-//     backgroundColor: "#2196F3",
-//   },
-//   fertilizingDot: {
-//     backgroundColor: "#FF9800",
-//   },
-//   tasksContainer: {
-//     flex: 1,
-//     backgroundColor: 'rgba(255, 255, 255, 0.7)',
-//     borderRadius: 10,
-//     padding: 16,
-//   },
-//   tasksTitle: {
-//     fontSize: 18,
-//     fontWeight: "bold",
-//     marginBottom: 16,
-//     color: "#333",
-//   },
-//   tasksList: {
-//     paddingBottom: 20,
-//   },
-//   taskItem: {
-//     flexDirection: "row",
-//     justifyContent: "space-between",
-//     alignItems: "center",
-//     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-//     borderRadius: 8,
-//     padding: 16,
-//     marginBottom: 12,
-//   },
-//   taskInfo: {
-//     flex: 1,
-//   },
-//   taskType: {
-//     fontSize: 16,
-//     fontWeight: "600",
-//     color: "#333",
-//     marginBottom: 4,
-//   },
-//   taskScientific: {
-//     fontSize: 14,
-//     fontStyle: "italic",
-//     color: "#666",
-//     marginBottom: 4,
-//   },
-//   taskTime: {
-//     fontSize: 12,
-//     color: "#888",
-//   },
-//   calendarButton: {
-//     padding: 8,
-//   },
-//   calendarButtonAdded: {
-//     opacity: 0.7,
-//   },
-//   noTasks: {
-//     flex: 1,
-//     justifyContent: "center",
-//     alignItems: "center",
-//     padding: 20,
-//   },
-//   noTasksText: {
-//     fontSize: 16,
-//     color: "#888",
-//   },
-// });
-
-// export default CalendarScreen;

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -9,361 +9,323 @@ import {
   ActivityIndicator,
   Alert,
   ImageBackground,
-  Modal,
-  TextInput,
-  Switch,
+  Dimensions,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import LottieView from "lottie-react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import * as ImagePicker from "expo-image-picker";
 import {
   useMyPlants,
   useRemoveFromMyPlants,
-  useSchedulePlantCare,
+  useWaterPlant,
+  useFertilizePlant,
+  useUpdateMyPlantImage,
 } from "../hooks/myPlants";
 import { useAuth } from "../hooks/useAuth";
-import { scheduleNotification } from "../utils/notifcation";
 
 const backgroundImage = require("../assets/images/7.png");
+const CARD_WIDTH = (Dimensions.get("window").width - 16 * 2 - 12) / 2;
+const DAY_MS = 1000 * 60 * 60 * 24;
+
+/** Days remaining until `isoDate`; negative means overdue. Null when no schedule is set. */
+const daysUntil = (isoDate) => {
+  if (!isoDate) return null;
+  return Math.ceil((new Date(isoDate).getTime() - Date.now()) / DAY_MS);
+};
+
+const formatDays = (days) => {
+  if (days === null) return "No schedule";
+  if (days <= 0) return days === 0 ? "Due today" : `${Math.abs(days)}d overdue`;
+  return `in ${days}d`;
+};
 
 const MyPlantsScreen = () => {
   const navigation = useNavigation();
-  const { userInfo, userToken } = useAuth();
+  const { userToken } = useAuth();
   const { data: myPlants, isLoading, isError, error } = useMyPlants();
-  const removeFromMyPlantsMutation = useRemoveFromMyPlants();
-  const schedulePlantCareMutation = useSchedulePlantCare();
+  const removeMutation = useRemoveFromMyPlants();
+  const waterMutation = useWaterPlant();
+  const fertilizeMutation = useFertilizePlant();
+  const updateImageMutation = useUpdateMyPlantImage();
+
+  // Per-plant action state: { [myPlantId]: 'water' | 'fertilize' | 'image' | null }
+  const [actionLoading, setActionLoading] = useState({});
   const [removingPlantId, setRemovingPlantId] = useState(null);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [selectedPlant, setSelectedPlant] = useState(null);
-  const [wateringDays, setWateringDays] = useState("7");
-  const [fertilizingDays, setFertilizingDays] = useState("30");
-  const [enableWatering, setEnableWatering] = useState(true);
-  const [enableFertilizing, setEnableFertilizing] = useState(true);
 
-  const handleAddPlantsPress = () => {
-    navigation.navigate("AllPlants");
+  const setLoading = (id, action) =>
+    setActionLoading((prev) => ({ ...prev, [id]: action }));
+
+  const handleAddPlantsPress = () => navigation.navigate("AllPlants");
+  const handleLoginPress = () => navigation.navigate("Login");
+  const handleCalendarPress = () => navigation.navigate("Calendar");
+  const handleDiagnosePress = () => navigation.navigate("Diagnose");
+  const handlePlantPress = (myPlant) =>
+    navigation.navigate("SinglePlant", { plant: myPlant.plant });
+
+  const handleWater = (myPlant) => {
+    setLoading(myPlant.id, "water");
+    waterMutation.mutate(myPlant.id, {
+      onSettled: () => setLoading(myPlant.id, null),
+      onError: (err) =>
+        Alert.alert("Error", err.message || "Could not water that plant."),
+    });
   };
 
-  const handleLoginPress = () => {
-    navigation.navigate("Login");
+  const handleFertilize = (myPlant) => {
+    setLoading(myPlant.id, "fertilize");
+    fertilizeMutation.mutate(myPlant.id, {
+      onSettled: () => setLoading(myPlant.id, null),
+      onError: (err) =>
+        Alert.alert("Error", err.message || "Could not fertilize that plant."),
+    });
   };
 
-  const handlePlantPress = (plant) => {
-    navigation.navigate("SinglePlant", { plant });
+  const handleUpdateImage = async (myPlant) => {
+    const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!granted) {
+      Alert.alert("Permission Required", "Media library access is required.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (result.canceled) return;
+
+    setLoading(myPlant.id, "image");
+    updateImageMutation.mutate(
+      { myPlantId: myPlant.id, imageUri: result.assets[0].uri },
+      {
+        onSettled: () => setLoading(myPlant.id, null),
+        onError: (err) =>
+          Alert.alert("Error", err.message || "Could not update the photo."),
+      },
+    );
   };
 
-  const handleRemovePlant = (plant) => {
+  const handleRemovePlant = (myPlant) => {
     Alert.alert(
       "Remove Plant",
-      `Are you sure you want to remove ${plant.commonName} from your plants?`,
+      `Are you sure you want to remove ${myPlant.plant.commonName} from your plants?`,
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Remove",
           style: "destructive",
           onPress: () => {
-            setRemovingPlantId(plant._id);
-            removeFromMyPlantsMutation.mutate(plant._id, {
-              onSuccess: () => {
-                setRemovingPlantId(null);
-              },
-              onError: (error) => {
-                setRemovingPlantId(null);
-                Alert.alert("Error", error.message || "Failed to remove plant");
-              },
+            setRemovingPlantId(myPlant.id);
+            removeMutation.mutate(myPlant.id, {
+              onSettled: () => setRemovingPlantId(null),
+              onError: (err) =>
+                Alert.alert("Error", err.message || "Failed to remove plant"),
             });
           },
         },
-      ]
+      ],
     );
   };
 
-  const handleScheduleCare = (plant) => {
-    setSelectedPlant(plant);
-    setWateringDays(plant.wateringFrequency?.toString() || "7");
-    setFertilizingDays(plant.fertilizingFrequency?.toString() || "30");
-    setEnableWatering(!!plant.wateringFrequency);
-    setEnableFertilizing(!!plant.fertilizingFrequency);
-    setShowScheduleModal(true);
-  };
+  // Dashboard stats, mirroring the web dashboard
+  const stats = useMemo(() => {
+    const list = myPlants || [];
+    const wateringDays = list.map((p) => daysUntil(p.nextWatering));
+    const fertilizingDays = list.map((p) => daysUntil(p.nextFertilizing));
 
-  const confirmScheduleCare = () => {
-    if (!enableWatering && !enableFertilizing) {
-      Alert.alert("Error", "Please select at least one care type");
-      return;
-    }
+    return {
+      total: list.length,
+      overdueWater: wateringDays.filter((d) => d !== null && d <= 0).length,
+      needFertilizer: fertilizingDays.filter((d) => d !== null && d <= 0)
+        .length,
+      dueToday:
+        wateringDays.filter((d) => d === 0).length +
+        fertilizingDays.filter((d) => d === 0).length,
+    };
+  }, [myPlants]);
 
-    schedulePlantCareMutation.mutate(
-      {
-        plantId: selectedPlant._id,
-        wateringFrequency: enableWatering ? parseInt(wateringDays) : null,
-        fertilizingFrequency: enableFertilizing
-          ? parseInt(fertilizingDays)
-          : null,
-      },
-      {
-        onSuccess: async (data) => {
-          setShowScheduleModal(false);
-          console.log(data);
+  const renderStats = () => (
+    <View style={styles.statsRow}>
+      <View style={[styles.statCard, { backgroundColor: "#E8F5E9" }]}>
+        <Icon name="leaf" size={20} color="#2E7D32" />
+        <Text style={styles.statNumber}>{stats.total}</Text>
+        <Text style={styles.statLabel}>Total Plants</Text>
+      </View>
+      <View style={[styles.statCard, { backgroundColor: "#FFEBEE" }]}>
+        <Icon name="alert-circle" size={20} color="#D32F2F" />
+        <Text style={styles.statNumber}>{stats.overdueWater}</Text>
+        <Text style={styles.statLabel}>Needs Water</Text>
+      </View>
+      <View style={[styles.statCard, { backgroundColor: "#FFF3E0" }]}>
+        <Icon name="nutrition" size={20} color="#FF9800" />
+        <Text style={styles.statNumber}>{stats.needFertilizer}</Text>
+        <Text style={styles.statLabel}>Needs Fertilizing</Text>
+      </View>
+      <View style={[styles.statCard, { backgroundColor: "#E3F2FD" }]}>
+        <Icon name="calendar" size={20} color="#1976D2" />
+        <Text style={styles.statNumber}>{stats.dueToday}</Text>
+        <Text style={styles.statLabel}>Due Today</Text>
+      </View>
+    </View>
+  );
 
-          const careData = data?.data;
-
-          if (
-            enableWatering &&
-            wateringDays &&
-            careData?.watering?.nextWatering
-          ) {
-            await scheduleNotification({
-              title: "Watering Reminder",
-              body: `Time to water your ${selectedPlant.commonName}`,
-              ...careData.watering.nextWatering,
-            });
-          }
-
-          if (
-            enableFertilizing &&
-            fertilizingDays &&
-            careData?.fertilizing?.nextFertilizing
-          ) {
-            await scheduleNotification({
-              title: "Fertilizing Reminder",
-              body: `Time to fertilize your ${selectedPlant.commonName}`,
-              ...careData.fertilizing.nextFertilizing,
-            });
-          }
-
-          Alert.alert(
-            "Success",
-            `Care schedule set for ${selectedPlant.commonName}`
-          );
-        },
-        onError: (error) => {
-          Alert.alert("Error", error.message || "Failed to schedule care");
-        },
-      }
-    );
-  };
-
-  const renderScheduleModal = () => (
-    <Modal
-      visible={showScheduleModal}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={() => setShowScheduleModal(false)}
-    >
-      <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>
-            Set Care Schedule for {selectedPlant?.commonName}
+  const renderHeader = () => (
+    <View style={styles.headerSection}>
+      <View style={styles.headerTopRow}>
+        <View>
+          <Text style={styles.headerTitle}>My Plants</Text>
+          <Text style={styles.headerSubtitle}>
+            Track and care for your green friends
           </Text>
-
-          <View style={styles.toggleContainer}>
-            <View style={styles.toggleRow}>
-              <Text style={styles.toggleLabel}>Watering</Text>
-              <Switch
-                value={enableWatering}
-                onValueChange={setEnableWatering}
-                trackColor={{ false: "#767577", true: "#81b0ff" }}
-                thumbColor={enableWatering ? "#2E7D32" : "#f4f3f4"}
-              />
-            </View>
-            <View style={styles.toggleRow}>
-              <Text style={styles.toggleLabel}>Fertilizing</Text>
-              <Switch
-                value={enableFertilizing}
-                onValueChange={setEnableFertilizing}
-                trackColor={{ false: "#767577", true: "#81b0ff" }}
-                thumbColor={enableFertilizing ? "#FF9800" : "#f4f3f4"}
-              />
-            </View>
-          </View>
-
-          {enableWatering && (
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Water every (days):</Text>
-              <View style={styles.inputRow}>
-                <TouchableOpacity
-                  style={styles.numberButton}
-                  onPress={() =>
-                    setWateringDays((prev) =>
-                      Math.max(1, parseInt(prev || 0) - 1).toString()
-                    )
-                  }
-                >
-                  <Text style={styles.numberButtonText}>-</Text>
-                </TouchableOpacity>
-                <TextInput
-                  style={styles.numberInput}
-                  keyboardType="numeric"
-                  value={wateringDays}
-                  onChangeText={setWateringDays}
-                  placeholder="7"
-                />
-                <TouchableOpacity
-                  style={styles.numberButton}
-                  onPress={() =>
-                    setWateringDays((prev) =>
-                      (parseInt(prev || 0) + 1).toString()
-                    )
-                  }
-                >
-                  <Text style={styles.numberButtonText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
-          {enableFertilizing && (
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Fertilize every (days):</Text>
-              <View style={styles.inputRow}>
-                <TouchableOpacity
-                  style={styles.numberButton}
-                  onPress={() =>
-                    setFertilizingDays((prev) =>
-                      Math.max(7, parseInt(prev || 0) - 7).toString()
-                    )
-                  }
-                >
-                  <Text style={styles.numberButtonText}>-</Text>
-                </TouchableOpacity>
-                <TextInput
-                  style={styles.numberInput}
-                  keyboardType="numeric"
-                  value={fertilizingDays}
-                  onChangeText={setFertilizingDays}
-                  placeholder="30"
-                />
-                <TouchableOpacity
-                  style={styles.numberButton}
-                  onPress={() =>
-                    setFertilizingDays((prev) =>
-                      (parseInt(prev || 0) + 7).toString()
-                    )
-                  }
-                >
-                  <Text style={styles.numberButtonText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
-          <View style={styles.modalButtonContainer}>
-            <TouchableOpacity
-              style={[styles.modalButton, styles.cancelButton]}
-              onPress={() => setShowScheduleModal(false)}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modalButton, styles.confirmButton]}
-              onPress={confirmScheduleCare}
-            >
-              <Text style={styles.confirmButtonText}>Set Schedule</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </View>
-    </Modal>
-  );
 
-  const renderEmptyState = () => (
-    <ImageBackground source={backgroundImage} style={styles.background}>
-      <View style={styles.emptyContainer}>
-        <LottieView
-          source={require("../assets/plant.json")}
-          autoPlay
-          loop={false}
-          style={styles.animation}
-        />
-        <Text style={styles.title}>Let's get started</Text>
-        <Text style={styles.subtitle}>
-          Get professional plant care guidance to keep your plant alive!
-        </Text>
-        <TouchableOpacity style={styles.button} onPress={handleAddPlantsPress}>
-          <Text style={styles.buttonText}>+ Add plants</Text>
+      <View style={styles.headerActionsRow}>
+        <TouchableOpacity
+          style={styles.headerActionButton}
+          onPress={handleCalendarPress}
+        >
+          <Icon name="calendar-outline" size={18} color="#2E7D32" />
+          <Text style={styles.headerActionText}>Calendar</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.headerActionButton}
+          onPress={handleDiagnosePress}
+        >
+          <Icon name="camera-outline" size={18} color="#2E7D32" />
+          <Text style={styles.headerActionText}>Diagnose</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.headerAddButton}
+          onPress={handleAddPlantsPress}
+        >
+          <Icon name="add" size={18} color="#FFFFFF" />
+          <Text style={styles.headerAddButtonText}>Add Plant</Text>
         </TouchableOpacity>
       </View>
-    </ImageBackground>
+
+      {renderStats()}
+    </View>
   );
 
-  const renderPlantItem = ({ item }) => {
-    const plant = item.plant || item;
-    if (!plant || !plant._id) {
-      return null;
-    }
-
-    const hasSchedule = item.nextWatering || item.nextFertilizing;
+  const renderPlantCard = ({ item: myPlant }) => {
+    const waterIn = daysUntil(myPlant.nextWatering);
+    const fertilizeIn = daysUntil(myPlant.nextFertilizing);
+    const displayImage = myPlant.imageUrl || myPlant.plant?.imageUrl;
+    const loading = actionLoading[myPlant.id];
 
     return (
-      <View style={styles.plantCard}>
+      <View style={[styles.card, { width: CARD_WIDTH }]}>
         <TouchableOpacity
-          style={styles.plantContent}
-          onPress={() => handlePlantPress(plant)}
+          activeOpacity={0.85}
+          onPress={() => handlePlantPress(myPlant)}
         >
-          <Image source={{ uri: plant.image }} style={styles.plantImage} />
-          <View style={styles.plantInfo}>
-            <Text style={styles.plantName}>
-              {plant.commonName || "Unknown Plant"}
-            </Text>
-            <Text style={styles.plantScientific}>
-              {plant.scientificName || ""}
-            </Text>
-            {hasSchedule && (
-              <View style={styles.scheduleInfo}>
-                {item.nextWatering && (
-                  <View style={styles.scheduleItem}>
-                    <Icon name="water-outline" size={16} color="#2E7D32" />
-                    <Text style={styles.scheduleText}>
-                      Water in{" "}
-                      {Math.ceil(
-                        (new Date(item.nextWatering) - new Date()) /
-                          (1000 * 60 * 60 * 24)
-                      )}{" "}
-                      days
-                    </Text>
-                  </View>
-                )}
-                {item.nextFertilizing && (
-                  <View style={styles.scheduleItem}>
-                    <Icon name="nutrition-outline" size={16} color="#FF9800" />
-                    <Text style={styles.scheduleText}>
-                      Fertilize in{" "}
-                      {Math.ceil(
-                        (new Date(item.nextFertilizing) - new Date()) /
-                          (1000 * 60 * 60 * 24)
-                      )}{" "}
-                      days
-                    </Text>
-                  </View>
-                )}
+          <View style={styles.cardImageWrapper}>
+            {displayImage ? (
+              <Image source={{ uri: displayImage }} style={styles.cardImage} />
+            ) : (
+              <View style={[styles.cardImage, styles.cardImagePlaceholder]}>
+                <Icon name="leaf-outline" size={32} color="#A5D6A7" />
               </View>
             )}
           </View>
         </TouchableOpacity>
 
-        <View style={styles.plantActions}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.scheduleButton]}
-            onPress={() => handleScheduleCare(plant)}
-          >
-            <Icon name="alarm-outline" size={20} color="#FFFFFF" />
+        <TouchableOpacity
+          style={styles.imageEditButton}
+          onPress={() => handleUpdateImage(myPlant)}
+          disabled={loading === "image"}
+        >
+          {loading === "image" ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Icon name="camera" size={14} color="#FFFFFF" />
+          )}
+        </TouchableOpacity>
+
+        <View style={styles.cardBody}>
+          <TouchableOpacity onPress={() => handlePlantPress(myPlant)}>
+            <Text style={styles.cardTitle} numberOfLines={1}>
+              {myPlant.plant?.commonName || "Unknown Plant"}
+            </Text>
+            <Text style={styles.cardSubtitle} numberOfLines={1}>
+              {myPlant.plant?.scientificName || ""}
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.removeButton]}
-            onPress={() => handleRemovePlant(plant)}
-            disabled={removingPlantId === plant._id}
-          >
-            {removingPlantId === plant._id ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Icon name="trash-outline" size={20} color="#FFFFFF" />
-            )}
-          </TouchableOpacity>
+
+          <View style={styles.scheduleInfo}>
+            <Text
+              style={[
+                styles.scheduleText,
+                waterIn !== null && waterIn <= 0 && styles.scheduleOverdue,
+              ]}
+              numberOfLines={1}
+            >
+              💧 {formatDays(waterIn)}
+            </Text>
+            <Text
+              style={[
+                styles.scheduleText,
+                fertilizeIn !== null && fertilizeIn <= 0 && styles.scheduleWarn,
+              ]}
+              numberOfLines={1}
+            >
+              🌱 {formatDays(fertilizeIn)}
+            </Text>
+          </View>
+
+          <View style={styles.cardActionsRow}>
+            <TouchableOpacity
+              style={[styles.cardActionButton, styles.waterButton]}
+              onPress={() => handleWater(myPlant)}
+              disabled={loading === "water"}
+            >
+              {loading === "water" ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Icon name="water" size={16} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.cardActionButton, styles.fertilizeButton]}
+              onPress={() => handleFertilize(myPlant)}
+              disabled={loading === "fertilize"}
+            >
+              {loading === "fertilize" ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Icon name="nutrition" size={16} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.cardActionButton, styles.removeButton]}
+              onPress={() => handleRemovePlant(myPlant)}
+              disabled={removingPlantId === myPlant.id}
+            >
+              {removingPlantId === myPlant.id ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Icon name="trash-outline" size={16} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     );
   };
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyContainer}>
+      <Icon name="leaf-outline" size={72} color="#C8E6C9" />
+      <Text style={styles.title}>No plants yet</Text>
+      <Text style={styles.subtitle}>Start building your plant collection</Text>
+      <TouchableOpacity style={styles.button} onPress={handleAddPlantsPress}>
+        <Text style={styles.buttonText}>+ Add Your First Plant</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   if (!userToken) {
     return (
@@ -409,52 +371,35 @@ const MyPlantsScreen = () => {
 
   if (isError) {
     return (
-      <ImageBackground source={backgroundImage} style={styles.background}>
-        <View style={styles.container}>
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>
-              Unable to load your plants:{" "}
-              {error?.message || "Please try again later"}
-            </Text>
-            <TouchableOpacity
-              style={[styles.button, { marginTop: 20 }]}
-              onPress={handleAddPlantsPress}
-            >
-              <Text style={styles.buttonText}>Browse Plants</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ImageBackground>
+      <View style={styles.centerContainer}>
+        <Text style={styles.errorText}>
+          Unable to load your plants:{" "}
+          {error?.message || "Please try again later"}
+        </Text>
+        <TouchableOpacity
+          style={[styles.button, { marginTop: 20 }]}
+          onPress={handleAddPlantsPress}
+        >
+          <Text style={styles.buttonText}>Browse Plants</Text>
+        </TouchableOpacity>
+      </View>
     );
   }
 
-  if (!myPlants || myPlants.length === 0) {
-    return renderEmptyState();
-  }
-
   return (
-    <ImageBackground source={backgroundImage} style={styles.background}>
-      <View style={styles.container}>
-        <FlatList
-          data={myPlants}
-          renderItem={renderPlantItem}
-          keyExtractor={(item) => {
-            const id = item?.plant?._id || item?._id;
-            return id ? id.toString() : Math.random().toString();
-          }}
-          contentContainerStyle={styles.listContainer}
-          showsVerticalScrollIndicator={false}
-        />
-
-        <TouchableOpacity
-          style={styles.floatingButton}
-          onPress={handleAddPlantsPress}
-        >
-          <Text style={styles.buttonText}>+ Add More Plants</Text>
-        </TouchableOpacity>
-      </View>
-      {renderScheduleModal()}
-    </ImageBackground>
+    <View style={styles.container}>
+      <FlatList
+        data={myPlants || []}
+        renderItem={renderPlantCard}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={2}
+        columnWrapperStyle={styles.columnWrapper}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={renderEmptyState}
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   );
 };
 
@@ -466,41 +411,36 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: "transparent",
+    backgroundColor: "#F5F7F5",
   },
   centerContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFFAA",
+    backgroundColor: "#FFFFFF",
     padding: 20,
   },
   emptyContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFFAA",
     padding: 20,
-  },
-  errorContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
+    paddingTop: 60,
   },
   animation: {
-    width: 300,
-    height: 300,
+    width: 260,
+    height: 260,
   },
   title: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: "bold",
     padding: 8,
     textAlign: "center",
+    color: "#333",
   },
   subtitle: {
-    fontSize: 16,
-    color: "#525252",
+    fontSize: 15,
+    color: "#666",
     textAlign: "center",
     marginBottom: 20,
     paddingHorizontal: 20,
@@ -542,182 +482,174 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 16,
-    paddingBottom: 80,
+    paddingBottom: 40,
   },
-  plantCard: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    overflow: "hidden",
+  columnWrapper: {
+    justifyContent: "space-between",
+  },
+
+  // Dashboard header
+  headerSection: {
     marginBottom: 16,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    alignItems: "center",
   },
-  plantContent: {
-    flex: 1,
-    flexDirection: "row",
+  headerTopRow: {
+    marginBottom: 14,
   },
-  plantImage: {
-    width: 100,
-    height: 100,
+  headerTitle: {
+    fontSize: 26,
+    fontWeight: "bold",
+    color: "#1B5E20",
   },
-  plantInfo: {
-    flex: 1,
-    padding: 16,
-    justifyContent: "center",
-  },
-  plantName: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 4,
-  },
-  plantScientific: {
+  headerSubtitle: {
     fontSize: 14,
-    fontStyle: "italic",
     color: "#666",
+    marginTop: 2,
   },
-  plantActions: {
+  headerActionsRow: {
     flexDirection: "row",
-    paddingRight: 8,
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 16,
   },
-  actionButton: {
-    width: 40,
-    height: 40,
+  headerActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "#2E7D32",
     borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  headerActionText: {
+    color: "#2E7D32",
+    fontWeight: "600",
+    fontSize: 13,
+    marginLeft: 6,
+  },
+  headerAddButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#2E7D32",
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  headerAddButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 13,
+    marginLeft: 6,
+  },
+
+  // Stats
+  statsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  statCard: {
+    width: "48.5%",
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 10,
+  },
+  statNumber: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#222",
+    marginTop: 6,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: "#555",
+    marginTop: 2,
+  },
+
+  // Plant card (grid)
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    marginBottom: 14,
+    overflow: "hidden",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  cardImageWrapper: {
+    width: "100%",
+    height: CARD_WIDTH,
+    backgroundColor: "#E8F5E9",
+  },
+  cardImage: {
+    width: "100%",
+    height: "100%",
+  },
+  cardImagePlaceholder: {
     justifyContent: "center",
     alignItems: "center",
-    marginLeft: 8,
   },
-  scheduleButton: {
-    backgroundColor: "#2196F3",
+  imageEditButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  removeButton: {
-    backgroundColor: "#D32F2F",
+  cardBody: {
+    padding: 10,
+  },
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#222",
+  },
+  cardSubtitle: {
+    fontSize: 12,
+    fontStyle: "italic",
+    color: "#777",
+    marginBottom: 6,
   },
   scheduleInfo: {
-    marginTop: 8,
-  },
-  scheduleItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 4,
+    marginBottom: 8,
   },
   scheduleText: {
     fontSize: 12,
-    color: "#666",
-    marginLeft: 6,
+    color: "#555",
+    marginTop: 2,
   },
-  floatingButton: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-    backgroundColor: "#2E7D32",
-    borderRadius: 25,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+  scheduleOverdue: {
+    color: "#D32F2F",
+    fontWeight: "600",
   },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
+  scheduleWarn: {
+    color: "#FF9800",
+    fontWeight: "600",
   },
-  modalContent: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 20,
-    width: "90%",
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  toggleContainer: {
-    marginBottom: 20,
-  },
-  toggleRow: {
+  cardActionsRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15,
+    gap: 6,
   },
-  toggleLabel: {
-    fontSize: 16,
-    color: "#333",
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 16,
-    marginBottom: 8,
-    color: "#333",
-  },
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  numberInput: {
+  cardActionButton: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: "#DDD",
+    height: 32,
     borderRadius: 8,
-    padding: 12,
-    textAlign: "center",
-    marginHorizontal: 10,
-    fontSize: 16,
-  },
-  numberButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#2E7D32",
     justifyContent: "center",
     alignItems: "center",
   },
-  numberButtonText: {
-    color: "#FFF",
-    fontSize: 20,
-    fontWeight: "bold",
+  waterButton: {
+    backgroundColor: "#2196F3",
   },
-  modalButtonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 20,
+  fertilizeButton: {
+    backgroundColor: "#FF9800",
   },
-  modalButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginHorizontal: 5,
-  },
-  cancelButton: {
-    backgroundColor: "#E0E0E0",
-  },
-  confirmButton: {
-    backgroundColor: "#2E7D32",
-  },
-  cancelButtonText: {
-    color: "#333",
-    fontWeight: "bold",
-  },
-  confirmButtonText: {
-    color: "#FFF",
-    fontWeight: "bold",
+  removeButton: {
+    backgroundColor: "#D32F2F",
   },
 });
 

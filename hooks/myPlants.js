@@ -5,7 +5,7 @@ import { useAuth } from "./useAuth";
 const fetchMyPlants = async () => {
   try {
     const { data } = await axiosInstance.get("/my-plants", {
-      params: { limit: 100 }
+      params: { limit: 100 },
     });
 
     if (!data?.data) {
@@ -18,7 +18,7 @@ const fetchMyPlants = async () => {
       throw new Error("Storage API is not available");
     }
     throw new Error(
-      error.response?.data?.message || error.message || "Failed to load plants"
+      error.response?.data?.message || error.message || "Failed to load plants",
     );
   }
 };
@@ -46,7 +46,7 @@ const addToMyPlants = async (plantId) => {
   } catch (error) {
     console.error("Error adding plant:", error);
     throw new Error(
-      error.response?.data?.message || error.message || "Failed to add plant"
+      error.response?.data?.message || error.message || "Failed to add plant",
     );
   }
 };
@@ -65,7 +65,9 @@ const removeFromMyPlants = async (myPlantId) => {
       throw new Error("Storage API is not available");
     }
     throw new Error(
-      error.response?.data?.message || error.message || "Failed to remove plant"
+      error.response?.data?.message ||
+        error.message ||
+        "Failed to remove plant",
     );
   }
 };
@@ -105,7 +107,7 @@ const waterPlant = async (myPlantId) => {
   } catch (error) {
     console.error("Error watering plant:", error);
     throw new Error(
-      error.response?.data?.message || error.message || "Failed to water plant"
+      error.response?.data?.message || error.message || "Failed to water plant",
     );
   }
 };
@@ -123,12 +125,16 @@ export const useWaterPlant = () => {
 
 const fertilizePlant = async (myPlantId) => {
   try {
-    const { data } = await axiosInstance.post(`/my-plants/${myPlantId}/fertilize`);
+    const { data } = await axiosInstance.post(
+      `/my-plants/${myPlantId}/fertilize`,
+    );
     return data.data.myPlant;
   } catch (error) {
     console.error("Error fertilizing plant:", error);
     throw new Error(
-      error.response?.data?.message || error.message || "Failed to fertilize plant"
+      error.response?.data?.message ||
+        error.message ||
+        "Failed to fertilize plant",
     );
   }
 };
@@ -138,6 +144,46 @@ export const useFertilizePlant = () => {
 
   return useMutation({
     mutationFn: fertilizePlant,
+    onSuccess: () => {
+      queryClient.invalidateQueries(["myPlants"]);
+    },
+  });
+};
+
+const updateMyPlantImage = async ({ myPlantId, imageUri }) => {
+  if (!myPlantId || typeof myPlantId !== "number") {
+    throw new Error("Invalid plant ID");
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append("image", {
+      uri: imageUri,
+      type: "image/jpeg",
+      name: "my-plant.jpg",
+    });
+
+    const { data } = await axiosInstance.patch(
+      `/my-plants/${myPlantId}/image`,
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return data.data.myPlant;
+  } catch (error) {
+    console.error("Error updating plant image:", error);
+    throw new Error(
+      error.response?.data?.message ||
+        error.message ||
+        "Failed to update plant photo",
+    );
+  }
+};
+
+export const useUpdateMyPlantImage = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateMyPlantImage,
     onSuccess: () => {
       queryClient.invalidateQueries(["myPlants"]);
     },
