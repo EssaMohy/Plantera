@@ -1,9 +1,14 @@
 // AuthProvider.js
-import React, { createContext, useContext } from "react";
+import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Create the React Query client with optimized configuration
-const queryClient = new QueryClient({
+//
+// Exported so axiosInstance.js (outside the React tree) can reset the
+// `["auth"]` query directly when a token refresh fails — that's what
+// actually drives `isAuthenticated` in Main.jsx, so updating it here is
+// enough to bounce the user back to the login screen.
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,

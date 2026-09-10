@@ -11,6 +11,7 @@ import ArticleDetailsScreen from "../screens/ArticleDetailsScreen";
 import MyPlantsScreen from "../screens/MyPlantsScreen";
 import ImagePreviewScreen from "../screens/ImagePreviewScreen";
 import CalendarScreen from "../screens/CalendarScreen";
+import NotificationsScreen from "../screens/NotificationsScreen";
 
 const Stack = createStackNavigator();
 
@@ -128,6 +129,24 @@ const StackNavigator = () => {
         component={CalendarScreen}
         options={{
           title: "Plant Care Calendar",
+          headerTintColor: "#2E7D32",
+          headerTitleStyle: {
+            fontWeight: "bold",
+            color: "#2E7D32",
+          },
+          headerTitleAlign: "center",
+          headerStyle: {
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0,
+          },
+        }}
+      />
+      <Stack.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{
+          title: "Notifications",
           headerTintColor: "#2E7D32",
           headerTitleStyle: {
             fontWeight: "bold",

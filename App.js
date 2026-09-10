@@ -1,26 +1,11 @@
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet } from "react-native";
 import Main from "./routes/Main";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import * as Notifications from "expo-notifications";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import {
-  registerForPushNotificationsAsync,
-  requestPushNotificationPermission,
-  sendInstantNotification,
-  scheduleNotification,
-  sendBackgroundNotificationTest,
-  sendClosedAppNotificationTest,
-} from "./utils/notifcation";
-
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+import { initPushNotifications } from "./utils/notifcation";
+import axiosInstance from "./api/axiosInstance";
 
 const queryClient = new QueryClient();
 
@@ -33,17 +18,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const registerAndSendTestNotification = async () => {
-      try {
-        const token = await registerForPushNotificationsAsync();
-        await requestPushNotificationPermission();
-        console.log("Push notification token:", token);
-      } catch (error) {
-        console.error("Error:", error);
-      }
-    };
-
-    registerAndSendTestNotification();
+    // Requests permission, then (only on a real device, only once granted)
+    // fetches this device's Expo push token and hands it to the backend.
+    // See utils/notifcation.js for why this alone isn't full push yet.
+    initPushNotifications(axiosInstance).catch((error) => {
+      console.error("Push notification setup failed:", error);
+    });
   }, []);
 
   return (

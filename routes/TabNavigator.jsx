@@ -14,6 +14,7 @@ import DiagnoseScreen from "../screens/DiagnoseScreen";
 import MyPlantsScreen from "../screens/MyPlantsScreen";
 import ScanModal from "../screens/ScanModal";
 import LightScreen from "../screens/LightScreen";
+import { useUnreadNotificationsCount } from "../hooks/notifications";
 
 const Tab = createBottomTabNavigator();
 const EmptyComponent = () => null;
@@ -32,8 +33,11 @@ const TabNavigator = () => {
     </TouchableOpacity>
   );
 
-  // New notification button component
+  // Notification bell with a live unread count (was previously defined
+  // but never rendered in headerRight, with a hardcoded "3" badge).
   const NotificationButton = () => {
+    const unreadCount = useUnreadNotificationsCount();
+
     return (
       <TouchableOpacity
         style={styles.notificationButton}
@@ -42,9 +46,13 @@ const TabNavigator = () => {
       >
         <View style={styles.notificationIconContainer}>
           <Ionicons name="notifications" size={24} color="#2E7D32" />
-          <View style={styles.notificationBadge}>
-            <Text style={styles.notificationBadgeText}>3</Text>
-          </View>
+          {unreadCount > 0 && (
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationBadgeText}>
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </Text>
+            </View>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -105,6 +113,7 @@ const TabNavigator = () => {
           headerRight: () => (
             <View style={styles.headerRightContainer}>
               <CalendarButton />
+              <NotificationButton />
             </View>
           ),
         })}
