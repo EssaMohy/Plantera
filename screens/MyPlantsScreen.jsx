@@ -12,6 +12,7 @@ import {
   Dimensions,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useQueryClient } from "@tanstack/react-query";
 import LottieView from "lottie-react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import * as ImagePicker from "expo-image-picker";
@@ -23,6 +24,8 @@ import {
   useUpdateMyPlantImage,
 } from "../hooks/myPlants";
 import { useAuth } from "../hooks/useAuth";
+import DiagnosisModal from "../components/DiagnosisModal";
+import IdentifyPlantModal from "../components/IdentifyPlantModal";
 
 const backgroundImage = require("../assets/images/7.png");
 const CARD_WIDTH = (Dimensions.get("window").width - 16 * 2 - 12) / 2;
@@ -42,6 +45,7 @@ const formatDays = (days) => {
 
 const MyPlantsScreen = () => {
   const navigation = useNavigation();
+  const queryClient = useQueryClient();
   const { userToken } = useAuth();
   const { data: myPlants, isLoading, isError, error } = useMyPlants();
   const removeMutation = useRemoveFromMyPlants();
@@ -53,15 +57,35 @@ const MyPlantsScreen = () => {
   const [actionLoading, setActionLoading] = useState({});
   const [removingPlantId, setRemovingPlantId] = useState(null);
 
+  // AI modals — mirrors DEPI-Front's PlantDashboard, where "Diagnose"
+  // opens a photo-diagnosis modal (not a screen), and identifying a
+  // plant by photo is offered alongside browsing the catalog to add one.
+  const [showDiagnosis, setShowDiagnosis] = useState(false);
+  const [showIdentify, setShowIdentify] = useState(false);
+
   const setLoading = (id, action) =>
     setActionLoading((prev) => ({ ...prev, [id]: action }));
 
   const handleAddPlantsPress = () => navigation.navigate("AllPlants");
   const handleLoginPress = () => navigation.navigate("Login");
   const handleCalendarPress = () => navigation.navigate("Calendar");
-  const handleDiagnosePress = () => navigation.navigate("Diagnose");
+  const handleDiagnosePress = () => setShowDiagnosis(true);
+  const handleIdentifyPress = () => setShowIdentify(true);
   const handlePlantPress = (myPlant) =>
     navigation.navigate("SinglePlant", { plant: myPlant.plant });
+
+  const handlePlantIdentified = () => {
+    // The identify+confirm flow adds the plant via a raw request inside
+    // IdentifyPlantModal (not through useAddToMyPlants), so refresh the
+    // list here rather than relying on that hook's own invalidation.
+    queryClient.invalidateQueries(["myPlants"]);
+    setShowIdentify(false);
+  };
+
+  const handleSwitchToCatalog = () => {
+    setShowIdentify(false);
+    navigation.navigate("AllPlants");
+  };
 
   const handleWater = (myPlant) => {
     setLoading(myPlant.id, "water");
@@ -196,6 +220,13 @@ const MyPlantsScreen = () => {
         >
           <Icon name="camera-outline" size={18} color="#2E7D32" />
           <Text style={styles.headerActionText}>Diagnose</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.headerActionButton}
+          onPress={handleIdentifyPress}
+        >
+          <Icon name="scan-outline" size={18} color="#2E7D32" />
+          <Text style={styles.headerActionText}>Identify</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.headerAddButton}
@@ -398,6 +429,17 @@ const MyPlantsScreen = () => {
         ListEmptyComponent={renderEmptyState}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
+      />
+
+      <DiagnosisModal
+        visible={showDiagnosis}
+        onClose={() => setShowDiagnosis(false)}
+      />
+      <IdentifyPlantModal
+        visible={showIdentify}
+        onClose={() => setShowIdentify(false)}
+        onIdentified={handlePlantIdentified}
+        onSwitchToCatalog={handleSwitchToCatalog}
       />
     </View>
   );
