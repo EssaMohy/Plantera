@@ -79,6 +79,8 @@ export const useAuth = () => {
   // REGISTER
   const registerMutation = useMutation({
     mutationFn: async (user) => {
+      // Backend expects `userName` (capital N) — sending `username` here
+      // was silently mismatched against the real payload shape.
       const res = await axiosInstance.post("/auth/register", user);
 
       return res.data;
@@ -131,11 +133,16 @@ export const useAuth = () => {
   });
 
   // RESET PASSWORD
+  //
+  // IMPORTANT: the backend's reset-password endpoint takes a `resetToken`
+  // — the value returned by /auth/verify-otp — not the raw 6-digit OTP.
+  // Sending `otp` here (as this used to) doesn't match the payload shape
+  // the backend expects at all.
   const resetPasswordMutation = useMutation({
-    mutationFn: async ({ email, otp, password }) => {
+    mutationFn: async ({ email, resetToken, password }) => {
       const res = await axiosInstance.post("/auth/reset-password", {
         email,
-        otp,
+        resetToken,
         password,
       });
 
@@ -242,27 +249,33 @@ export const useAuth = () => {
           password,
         });
 
-        return true;
-      } catch {
-        return false;
+        return { success: true };
+      } catch (err) {
+        // Extract the message directly from the error that was just
+        // thrown, rather than reading `authError` — that's a stale
+        // closure value captured when this function was created, not
+        // the fresh message onError just set via setAuthError().
+        const message = err.response?.data?.message || "Login failed";
+        return { success: false, error: message };
       }
     },
 
-    register: async (firstName, lastName, username, email, password) => {
+    register: async (firstName, lastName, userName, email, password) => {
       setAuthError(null);
 
       try {
         await registerMutation.mutateAsync({
           firstName,
           lastName,
-          username,
+          userName,
           email,
           password,
         });
 
-        return true;
-      } catch {
-        return false;
+        return { success: true };
+      } catch (err) {
+        const message = err.response?.data?.message || "Registration failed";
+        return { success: false, error: message };
       }
     },
 
@@ -275,51 +288,62 @@ export const useAuth = () => {
         return {
           success: true,
         };
-      } catch {
+      } catch (err) {
+        const message =
+          err.response?.data?.message || "Failed to send reset code";
         return {
           success: false,
-          error: authError,
+          error: message,
         };
       }
     },
 
+    // Returns `resetToken` on success — the backend requires this exact
+    // value (not the raw OTP) for the subsequent resetPassword call.
     verifyOTP: async (email, otp) => {
       setAuthError(null);
 
       try {
-        await verifyOtpMutation.mutateAsync({
+        const data = await verifyOtpMutation.mutateAsync({
           email,
           otp,
         });
 
         return {
           success: true,
+          resetToken: data.data?.resetToken,
         };
-      } catch {
+      } catch (err) {
+        const message =
+          err.response?.data?.message || "Invalid verification code";
         return {
           success: false,
-          error: authError,
+          error: message,
         };
       }
     },
 
-    resetPassword: async (email, otp, password) => {
+    // `resetToken` is the value returned by verifyOTP() above — not the
+    // raw 6-digit code the user typed.
+    resetPassword: async (email, resetToken, password) => {
       setAuthError(null);
 
       try {
         await resetPasswordMutation.mutateAsync({
           email,
-          otp,
+          resetToken,
           password,
         });
 
         return {
           success: true,
         };
-      } catch {
+      } catch (err) {
+        const message =
+          err.response?.data?.message || "Failed to reset password";
         return {
           success: false,
-          error: authError,
+          error: message,
         };
       }
     },
@@ -333,10 +357,12 @@ export const useAuth = () => {
         return {
           success: true,
         };
-      } catch {
+      } catch (err) {
+        const message =
+          err.response?.data?.message || "Failed to update profile";
         return {
           success: false,
-          error: authError,
+          error: message,
         };
       }
     },
@@ -353,10 +379,11 @@ export const useAuth = () => {
         return {
           success: true,
         };
-      } catch {
+      } catch (err) {
+        const message = err.response?.data?.message || "Password change failed";
         return {
           success: false,
-          error: authError,
+          error: message,
         };
       }
     },
@@ -420,10 +447,12 @@ export const useNotificationPreferences = () => {
       return {
         success: true,
       };
-    } catch {
+    } catch (err) {
+      const message =
+        err.response?.data?.message || "Failed to update preferences";
       return {
         success: false,
-        error: notificationError,
+        error: message,
       };
     }
   };

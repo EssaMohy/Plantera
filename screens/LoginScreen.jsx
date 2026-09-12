@@ -22,7 +22,7 @@ const LoginScreen = ({ navigation }) => {
   const [passwordError, setPasswordError] = useState("");
 
   // Use the auth hook directly
-  const { login, error, setError, isLoading } = useAuth();
+  const { login, setError, isLoading } = useAuth();
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
@@ -73,11 +73,11 @@ const LoginScreen = ({ navigation }) => {
       // Attempt login
       const result = await login(email, password);
 
-      // If there's an error message but login didn't throw (returned false)
-      if (!result.success && error) {
-        // Highlight both fields and show error message
-        setEmailError("Invalid credentials");
-        setPasswordError("Invalid credentials");
+      if (!result.success) {
+        // Use the message login() just returned, not the `error` state
+        // variable — that's a stale closure value from before this call.
+        setEmailError(result.error || "Invalid credentials");
+        setPasswordError(result.error || "Invalid credentials");
       }
     } catch (err) {
       // This would catch any unexpected errors

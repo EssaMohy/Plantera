@@ -11,10 +11,15 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import axiosInstance from "../api/axiosInstance";
+import { useAuth } from "../hooks/useAuth";
 
 const ResetPasswordScreen = ({ navigation, route }) => {
-  const { email, otp } = route.params;
+  // `resetToken` comes from VerificationScreen's successful verifyOTP()
+  // call — the backend's /auth/reset-password endpoint requires this
+  // exact value, not the raw 6-digit code the user typed.
+  const { email, resetToken } = route.params;
+  const { resetPassword } = useAuth();
+
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -35,10 +40,8 @@ const ResetPasswordScreen = ({ navigation, route }) => {
   };
 
   const handleResetPassword = async () => {
-    // Clear previous error
     setError(null);
 
-    // Validate passwords
     if (!password || !confirmPassword) {
       setError("Please enter both password fields");
       return;
@@ -59,29 +62,21 @@ const ResetPasswordScreen = ({ navigation, route }) => {
       return;
     }
 
+    if (!resetToken) {
+      setError("Your verification session expired. Please request a new code.");
+      return;
+    }
+
     setIsLoading(true);
+    const result = await resetPassword(email, resetToken, password);
+    setIsLoading(false);
 
-    try {
-      // Send request to reset password with email, OTP and new password
-      const response = await axiosInstance.post("/auth/reset-password", {
-        email,
-        otp,
-        password,
-      });
-
-      setIsLoading(false);
+    if (result.success) {
       Alert.alert("Success", "Your password has been reset successfully", [
         { text: "OK", onPress: () => navigation.navigate("Login") },
       ]);
-    } catch (error) {
-      setIsLoading(false);
-
-      // Handle specific error messages
-      if (error.response) {
-        setError(error.response.data.message || "Failed to reset password");
-      } else {
-        setError("Network error. Please check your connection.");
-      }
+    } else {
+      setError(result.error || "Failed to reset password");
     }
   };
 
@@ -170,7 +165,7 @@ const ResetPasswordScreen = ({ navigation, route }) => {
           </View>
 
           <TouchableOpacity
-            style={styles.resetButton}
+            style={[styles.resetButton, isLoading && styles.disabledButton]}
             onPress={handleResetPassword}
             disabled={isLoading}
           >
@@ -262,6 +257,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginTop: 10,
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
   resetButtonText: {
     color: "#FFFFFF",

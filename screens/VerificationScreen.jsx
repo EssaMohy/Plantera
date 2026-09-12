@@ -12,15 +12,17 @@ import {
   Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import axiosInstance from "../api/axiosInstance";
+import { useAuth } from "../hooks/useAuth";
 
 const screenWidth = Dimensions.get("window").width;
 const otpBoxSize = (screenWidth - 60) / 6 - 5; // spacing between inputs
 
 const VerificationScreen = ({ navigation, route }) => {
   const { email } = route.params;
+  const { verifyOTP, forgotPassword } = useAuth();
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   const inputRefs = useRef([...Array(6)].map(() => React.createRef()));
 
@@ -53,31 +55,47 @@ const VerificationScreen = ({ navigation, route }) => {
 
     setIsLoading(true);
     try {
-      // In real app, send OTP to backend for verification
-      setIsLoading(false);
-      navigation.navigate("ResetPassword", { email, otp });
+      // This previously just checked the digit count locally and
+      // navigated straight through without ever calling the backend —
+      // meaning a wrong code wasn't caught until the final reset-password
+      // step (if at all). It now actually verifies the code, and the
+      // backend requires the `resetToken` it returns — not the raw
+      // otp — for the next step.
+      const result = await verifyOTP(email, otp);
+
+      if (result.success) {
+        navigation.navigate("ResetPassword", {
+          email,
+          resetToken: result.resetToken,
+        });
+      } else {
+        Alert.alert("Error", result.error || "Invalid verification code");
+      }
     } catch (error) {
-      setIsLoading(false);
       Alert.alert("Error", "Failed to verify code. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleResendCode = async () => {
-    setIsLoading(true);
+    setIsResending(true);
 
     try {
-      await axiosInstance.post("/auth/forgot-password", { email });
-      setIsLoading(false);
+      await forgotPassword(email);
       Alert.alert(
         "Success",
-        "A new verification code has been sent to your email"
+        "A new verification code has been sent to your email",
       );
     } catch (error) {
-      setIsLoading(false);
+      // Deliberately vague, same as the original screen: don't reveal
+      // whether an account exists for this email.
       Alert.alert(
         "Success",
-        "If the email exists, a new verification code has been sent"
+        "If the email exists, a new verification code has been sent",
       );
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -120,7 +138,7 @@ const VerificationScreen = ({ navigation, route }) => {
           </View>
 
           <TouchableOpacity
-            style={styles.verifyButton}
+            style={[styles.verifyButton, isLoading && styles.disabledButton]}
             onPress={handleVerifyOTP}
             disabled={isLoading}
           >
@@ -131,8 +149,10 @@ const VerificationScreen = ({ navigation, route }) => {
 
           <View style={styles.resendContainer}>
             <Text style={styles.resendText}>Didn't receive the code? </Text>
-            <TouchableOpacity onPress={handleResendCode} disabled={isLoading}>
-              <Text style={styles.resendLink}>Resend</Text>
+            <TouchableOpacity onPress={handleResendCode} disabled={isResending}>
+              <Text style={styles.resendLink}>
+                {isResending ? "Sending..." : "Resend"}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -193,6 +213,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
   verifyButtonText: {
     color: "#FFFFFF",
