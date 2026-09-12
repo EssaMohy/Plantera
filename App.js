@@ -4,8 +4,16 @@ import Main from "./routes/Main";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { initPushNotifications } from "./utils/notifcation";
-import axiosInstance from "./api/axiosInstance";
+import { NotificationProvider } from "./context/NotificationContext";
+import * as Notifications from "expo-notifications";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 const queryClient = new QueryClient();
 
@@ -17,20 +25,13 @@ export default function App() {
     prepare();
   }, []);
 
-  useEffect(() => {
-    // Requests permission, then (only on a real device, only once granted)
-    // fetches this device's Expo push token and hands it to the backend.
-    // See utils/notifcation.js for why this alone isn't full push yet.
-    initPushNotifications(axiosInstance).catch((error) => {
-      console.error("Push notification setup failed:", error);
-    });
-  }, []);
-
   return (
-    <QueryClientProvider client={queryClient}>
-      <StatusBar style="dark" />
-      <Main />
-    </QueryClientProvider>
+    <NotificationProvider>
+      <QueryClientProvider client={queryClient}>
+        <StatusBar style="dark" />
+        <Main />
+      </QueryClientProvider>
+    </NotificationProvider>
   );
 }
 

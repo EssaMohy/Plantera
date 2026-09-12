@@ -139,11 +139,11 @@ const HomeScreen = () => {
     // >
     <FlatList
       data={plants.slice(0, 6)}
-      keyExtractor={(item) => item._id}
+      keyExtractor={(item) => item.id.toString()}
       renderItem={renderPlant}
       numColumns={2}
       ListHeaderComponent={renderHeader}
-      ListFooterComponent={renderCategories}
+      // ListFooterComponent={renderCategories}
       contentContainerStyle={styles.container}
     />
     // </ImageBackground>

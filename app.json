@@ -27,6 +27,7 @@
     },
     "android": {
       "package": "com.essam74.plantarea",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"
