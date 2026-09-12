@@ -14,7 +14,7 @@ import {
   useNotifications,
   useNotificationSocket,
 } from "../hooks/notifications";
-import { presentLocalNotification } from "../utils/notifcation";
+import { presentLocalNotification } from "../context/NotificationContext";
 
 const TYPE_ICON = {
   watering_reminder: { name: "water", color: "#2196F3" },
@@ -54,7 +54,7 @@ const NotificationsScreen = () => {
 
   // Live updates: when the server pushes a "notification" socket event,
   // drop it straight into the list and surface it as a local OS banner
-  // (see utils/notifcation.js for why this — not true background push —
+  // (see context/NotificationContext.tsx for why this — not true background push —
   // is the mobile equivalent of DEPI-Front's live toast today).
   const handleLiveNotification = useCallback(
     (data) => {

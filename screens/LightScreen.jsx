@@ -6,7 +6,7 @@ import LightSensorComponent from "../components/LightSensorComponent";
 const SettingsScreen = () => {
   return (
     <ImageBackground
-      source={require("../assets/images/7.png")}      
+      source={require("../assets/images/7.png")}
       style={styles.background}
       resizeMode="cover"
     >
@@ -21,11 +21,10 @@ export default SettingsScreen;
 
 const styles = StyleSheet.create({
   background: {
-    flex: 1, 
-    justifyContent: "center", 
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
-    backgroundColor:"white"
-    
+    backgroundColor: "white",
   },
   container: {
     flex: 1,

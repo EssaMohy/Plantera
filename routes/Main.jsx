@@ -10,11 +10,6 @@ import VerificationScreen from "../screens/VerificationScreen";
 import ResetPasswordScreen from "../screens/ResetPasswordScreen";
 import { AuthProvider } from "../providers/AuthProvider";
 import { useAuth } from "../hooks/useAuth";
-import {
-  registerForPushNotificationsAsync,
-  requestPushNotificationPermission,
-  sendInstantNotification,
-} from "../utils/notifcation";
 import SplashScreen from "../screens/SplashScreen"; // Import the SplashScreen component
 
 const Stack = createStackNavigator();
