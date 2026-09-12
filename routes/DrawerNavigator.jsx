@@ -19,6 +19,7 @@ import NotificationsScreen from "../screens/NotificationsScreen";
 import { useAuth } from "../hooks/useAuth";
 import ProfileStack from "./ProfileStack";
 import CalendarScreen from "../screens/CalendarScreen";
+import CommunityStack from "./CommunityStack";
 
 const Drawer = createDrawerNavigator();
 
@@ -46,7 +47,7 @@ const CustomDrawerContent = (props) => {
           },
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 
@@ -172,6 +173,9 @@ const DrawerNavigator = () => {
             case "Calendar":
               iconName = focused ? "calendar" : "calendar-outline";
               break;
+            case "Community":
+              iconName = focused ? "people" : "people-outline";
+              break;
             default:
               iconName = focused ? "help" : "help-outline";
           }
@@ -194,6 +198,11 @@ const DrawerNavigator = () => {
         name="Calendar"
         component={CalendarScreen}
         options={{ title: "Calendar" }}
+      />
+      <Drawer.Screen
+        name="Community"
+        component={CommunityStack}
+        options={{ title: "Community", headerShown: false }}
       />
     </Drawer.Navigator>
   );
